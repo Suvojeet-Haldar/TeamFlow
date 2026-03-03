@@ -16,6 +16,11 @@
             <div style="background:white; padding:10px; margin-bottom:8px; border-radius:4px; border:1px solid #ddd;">
                 <strong>{{ task.title }}</strong>
                 <div style="font-size:0.85em; color:#666;">{{ task.priority }}</div>
+                {% if task.assigned_to %}
+                    <div style="font-size:0.85em; color:#888; margin-top:2px;">
+                        👤 {{ task.assigned_to.username }}
+                    </div>
+                {% endif %}
                 <form method="POST" action="/tasks/{{ task.id }}/update-status/" style="margin-top:6px;">
                     {% csrf_token %}
                     <select name="status" onchange="this.form.submit()">
@@ -65,6 +70,17 @@
             <option value="urgent">Urgent</option>
         </select>
     </p>
+
+    <p>
+        Assign to:<br>
+        <select name="assigned_to">
+            <option value="">Unassigned</option>
+            {% for member in members %}
+                <option value="{{ member.id }}">{{ member.username }}</option>
+            {% endfor %}
+        </select>
+    </p>
+
     <button type="submit">Create Task</button>
 
     <hr style="margin-top:32px;">

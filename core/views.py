@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from .models import Project, Task, ActivityLog
+from .models import Project, Task, ActivityLog, CustomUser
 
 
 @login_required
@@ -19,13 +19,18 @@ def project_detail(request, project_id):
         status = request.POST.get("status")
         priority = request.POST.get("priority")
 
+        assigned_to_id = request.POST.get("assigned_to")
+        assigned_to = None
+        if assigned_to_id:
+            assigned_to = CustomUser.objects.filter(id=assigned_to_id).first()
+
         task = Task.objects.create(
             project=project,
             title=title,
             description=description,
             status=status,
             priority=priority,
-            assigned_to=None,
+            assigned_to=assigned_to,
         )
 
         ActivityLog.objects.create(
@@ -48,6 +53,7 @@ def project_detail(request, project_id):
             ("Done", Task.objects.filter(project=project, status="done")),
         ],
         "activity_logs": activity_logs,
+        "members": CustomUser.objects.filter(organization=request.user.organization),
     }
     return render(request, "core/project_detail.html", context)
 
