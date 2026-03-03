@@ -31,9 +31,23 @@ def project_detail(request, project_id):
 
     context = {
         "project": project,
-        "todo_tasks": Task.objects.filter(project=project, status="todo"),
-        "progress_tasks": Task.objects.filter(project=project, status="in_progress"),
-        "blocked_tasks": Task.objects.filter(project=project, status="blocked"),
-        "done_tasks": Task.objects.filter(project=project, status="done"),
+        "columns": [
+            ("Todo", Task.objects.filter(project=project, status="todo")),
+            ("In Progress", Task.objects.filter(project=project, status="in_progress")),
+            ("Blocked", Task.objects.filter(project=project, status="blocked")),
+            ("Done", Task.objects.filter(project=project, status="done")),
+        ]
     }
     return render(request, "core/project_detail.html", context)
+
+@login_required
+def update_task_status(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+
+    if request.method == "POST":
+        new_status = request.POST.get("status")
+        if new_status in ["todo", "in_progress", "blocked", "done"]:
+            task.status = new_status
+            task.save()
+
+    return redirect("project_detail", project_id=task.project.id)

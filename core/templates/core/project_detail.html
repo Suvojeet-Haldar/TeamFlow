@@ -1,70 +1,48 @@
-<h1>{{ project.name }}</h1>
+<div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>{{ project.name }}</h1>
+    <a href="/projects/">← Back to Projects</a>
+</div>
 
-<div style="display: flex; gap: 24px; align-items: flex-start;">
+<div style="display:flex; gap:24px; align-items:flex-start; margin-top:24px;">
 
-    <div style="min-width: 180px;">
-        <h3>Todo</h3>
-        <ul>
-            {% for task in todo_tasks %}
-                <li>{{ task.title }} <em>({{ task.priority }})</em></li>
-            {% empty %}
-                <li>—</li>
-            {% endfor %}
-        </ul>
+    {% for column_name, column_tasks in columns %}
+    <div style="min-width:200px; background:#f4f4f4; padding:12px; border-radius:6px;">
+        <h3>{{ column_name }}</h3>
+        {% for task in column_tasks %}
+            <div style="background:white; padding:10px; margin-bottom:8px; border-radius:4px; border:1px solid #ddd;">
+                <strong>{{ task.title }}</strong>
+                <div style="font-size:0.85em; color:#666;">{{ task.priority }}</div>
+                <form method="POST" action="/tasks/{{ task.id }}/update-status/" style="margin-top:6px;">
+                    {% csrf_token %}
+                    <select name="status" onchange="this.form.submit()">
+                        <option value="todo" {% if task.status == "todo" %}selected{% endif %}>Todo</option>
+                        <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>In Progress</option>
+                        <option value="blocked" {% if task.status == "blocked" %}selected{% endif %}>Blocked</option>
+                        <option value="done" {% if task.status == "done" %}selected{% endif %}>Done</option>
+                    </select>
+                </form>
+            </div>
+        {% empty %}
+            <p style="color:#aaa; font-size:0.9em;">No tasks</p>
+        {% endfor %}
     </div>
-
-    <div style="min-width: 180px;">
-        <h3>In Progress</h3>
-        <ul>
-            {% for task in progress_tasks %}
-                <li>{{ task.title }} <em>({{ task.priority }})</em></li>
-            {% empty %}
-                <li>—</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <div style="min-width: 180px;">
-        <h3>Blocked</h3>
-        <ul>
-            {% for task in blocked_tasks %}
-                <li>{{ task.title }} <em>({{ task.priority }})</em></li>
-            {% empty %}
-                <li>—</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <div style="min-width: 180px;">
-        <h3>Done</h3>
-        <ul>
-            {% for task in done_tasks %}
-                <li>{{ task.title }} <em>({{ task.priority }})</em></li>
-            {% empty %}
-                <li>—</li>
-            {% endfor %}
-        </ul>
-    </div>
+    {% endfor %}
 
 </div>
 
-<hr>
-
+<hr style="margin-top:32px;">
 <h2>Add Task</h2>
 
 <form method="POST">
     {% csrf_token %}
-
     <p>
         Title:<br>
         <input type="text" name="title" required>
     </p>
-
     <p>
         Description:<br>
         <textarea name="description"></textarea>
     </p>
-
     <p>
         Status:<br>
         <select name="status">
@@ -74,7 +52,6 @@
             <option value="done">Done</option>
         </select>
     </p>
-
     <p>
         Priority:<br>
         <select name="priority">
@@ -84,6 +61,5 @@
             <option value="urgent">Urgent</option>
         </select>
     </p>
-
     <button type="submit">Create Task</button>
 </form>
