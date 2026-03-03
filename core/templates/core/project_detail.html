@@ -62,4 +62,35 @@
         </select>
     </p>
     <button type="submit">Create Task</button>
+
+    <hr style="margin-top:32px;">
+    <h2>Activity Log</h2>
+
+    {% if activity_logs %}
+        <ul style="list-style:none; padding:0;">
+            {% for log in activity_logs %}
+                <li style="padding:8px 0; border-bottom:1px solid #eee; font-size:0.9em;">
+                    <strong>{{ log.user }}</strong> {{ log.action }}
+                    <span style="color:#aaa; float:right;">
+                        <time class="local-time" datetime="{{ log.timestamp|date:'c' }}">
+                            {{ log.timestamp|date:"M d, Y H:i" }} UTC
+                        </time>
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p style="color:#aaa;">No activity yet.</p>
+    {% endif %}
+
 </form>
+
+<script>
+    document.querySelectorAll('.local-time').forEach(function(el) {
+        const utc = new Date(el.getAttribute('datetime'));
+        el.textContent = utc.toLocaleString(undefined, {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+    });
+</script>

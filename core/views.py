@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from .models import Project, Task
+from .models import Project, Task, ActivityLog
 
 
 @login_required
@@ -19,7 +19,7 @@ def project_detail(request, project_id):
         status = request.POST.get("status")
         priority = request.POST.get("priority")
 
-        Task.objects.create(
+        task = Task.objects.create(
             project=project,
             title=title,
             description=description,
@@ -27,7 +27,17 @@ def project_detail(request, project_id):
             priority=priority,
             assigned_to=None,
         )
+
+        ActivityLog.objects.create(
+            user=request.user,
+            project=project,
+            task=task,
+            action=f"created task \"{task.title}\" with status {task.status}"
+        )
+
         return redirect("project_detail", project_id=project.id)
+
+    activity_logs = ActivityLog.objects.filter(project=project).order_by("-timestamp")[:20]
 
     context = {
         "project": project,
@@ -36,9 +46,11 @@ def project_detail(request, project_id):
             ("In Progress", Task.objects.filter(project=project, status="in_progress")),
             ("Blocked", Task.objects.filter(project=project, status="blocked")),
             ("Done", Task.objects.filter(project=project, status="done")),
-        ]
+        ],
+        "activity_logs": activity_logs,
     }
     return render(request, "core/project_detail.html", context)
+
 
 @login_required
 def update_task_status(request, task_id):
@@ -47,7 +59,15 @@ def update_task_status(request, task_id):
     if request.method == "POST":
         new_status = request.POST.get("status")
         if new_status in ["todo", "in_progress", "blocked", "done"]:
+            old_status = task.status
             task.status = new_status
             task.save()
+
+            ActivityLog.objects.create(
+                user=request.user,
+                project=task.project,
+                task=task,
+                action=f"moved \"{task.title}\" from {old_status} to {new_status}"
+            )
 
     return redirect("project_detail", project_id=task.project.id)
