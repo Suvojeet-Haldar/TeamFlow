@@ -1,0 +1,50 @@
+<h1>{{ project.name }}</h1>
+
+<h2>Tasks</h2>
+
+<ul>
+    {% for task in tasks %}
+        <li>
+            {{ task.title }} — {{ task.status }} — {{ task.priority }}
+        </li>
+    {% empty %}
+        <li>No tasks yet</li>
+    {% endfor %}
+</ul>
+
+<h2>Add Task</h2>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <p>
+        Title:<br>
+        <input type="text" name="title">
+    </p>
+
+    <p>
+        Description:<br>
+        <textarea name="description"></textarea>
+    </p>
+
+    <p>
+        Status:<br>
+        <select name="status">
+            <option value="todo">Todo</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+        </select>
+    </p>
+
+    <p>
+        Priority:<br>
+        <select name="priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select>
+    </p>
+
+    <button type="submit">Create Task</button>
+
+</form>
