@@ -120,3 +120,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 AUTH_USER_MODEL = 'core.CustomUser'
+
+LOGIN_REDIRECT_URL = '/projects/'
+
+LOGOUT_REDIRECT_URL = '/accounts/login/'

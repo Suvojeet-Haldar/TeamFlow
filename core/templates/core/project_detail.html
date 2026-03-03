@@ -1,16 +1,54 @@
 <h1>{{ project.name }}</h1>
 
-<h2>Tasks</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start;">
 
-<ul>
-    {% for task in tasks %}
-        <li>
-            {{ task.title }} — {{ task.status }} — {{ task.priority }}
-        </li>
-    {% empty %}
-        <li>No tasks yet</li>
-    {% endfor %}
-</ul>
+    <div style="min-width: 180px;">
+        <h3>Todo</h3>
+        <ul>
+            {% for task in todo_tasks %}
+                <li>{{ task.title }} <em>({{ task.priority }})</em></li>
+            {% empty %}
+                <li>—</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div style="min-width: 180px;">
+        <h3>In Progress</h3>
+        <ul>
+            {% for task in progress_tasks %}
+                <li>{{ task.title }} <em>({{ task.priority }})</em></li>
+            {% empty %}
+                <li>—</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div style="min-width: 180px;">
+        <h3>Blocked</h3>
+        <ul>
+            {% for task in blocked_tasks %}
+                <li>{{ task.title }} <em>({{ task.priority }})</em></li>
+            {% empty %}
+                <li>—</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div style="min-width: 180px;">
+        <h3>Done</h3>
+        <ul>
+            {% for task in done_tasks %}
+                <li>{{ task.title }} <em>({{ task.priority }})</em></li>
+            {% empty %}
+                <li>—</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</div>
+
+<hr>
 
 <h2>Add Task</h2>
 
@@ -19,7 +57,7 @@
 
     <p>
         Title:<br>
-        <input type="text" name="title">
+        <input type="text" name="title" required>
     </p>
 
     <p>
@@ -32,6 +70,7 @@
         <select name="status">
             <option value="todo">Todo</option>
             <option value="in_progress">In Progress</option>
+            <option value="blocked">Blocked</option>
             <option value="done">Done</option>
         </select>
     </p>
@@ -42,9 +81,9 @@
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
+            <option value="urgent">Urgent</option>
         </select>
     </p>
 
     <button type="submit">Create Task</button>
-
 </form>
