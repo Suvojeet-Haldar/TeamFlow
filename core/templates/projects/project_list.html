@@ -1,15 +1,24 @@
 <div style="display:flex; justify-content:space-between; align-items:center;">
     <h1>Projects</h1>
-    <form method="POST" action="/accounts/logout/">
-        {% csrf_token %}
-        <button type="submit">Logout</button>
-    </form>
+    <div>
+        <a href="/projects/create/">
+            <button>+ New Project</button>
+        </a>
+        <form method="POST" action="/accounts/logout/" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+    </div>
 </div>
 
-<ul>
-    {% for project in projects %}
-        <li>
-            <a href="/projects/{{ project.id }}/">{{ project.name }}</a>
-        </li>
-    {% endfor %}
-</ul>
+{% if projects %}
+    <ul>
+        {% for project in projects %}
+            <li>
+                <a href="/projects/{{ project.id }}/">{{ project.name }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No projects yet. Create your first one.</p>
+{% endif %}

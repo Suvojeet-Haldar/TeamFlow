@@ -71,3 +71,27 @@ def update_task_status(request, task_id):
             )
 
     return redirect("project_detail", project_id=task.project.id)
+
+@login_required
+def create_project(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+
+        project = Project.objects.create(
+            name=name,
+            description=description,
+            organization=request.user.organization,
+            created_by=request.user
+        )
+
+        ActivityLog.objects.create(
+            user=request.user,
+            project=project,
+            task=None,
+            action=f"created project \"{project.name}\""
+        )
+
+        return redirect("project_detail", project_id=project.id)
+
+    return render(request, "core/create_project.html")

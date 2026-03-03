@@ -3,6 +3,10 @@
     <a href="/projects/">← Back to Projects</a>
 </div>
 
+{% if project.description %}
+    <p style="color:#555; margin-top:4px;">{{ project.description }}</p>
+{% endif %}
+
 <div style="display:flex; gap:24px; align-items:flex-start; margin-top:24px;">
 
     {% for column_name, column_tasks in columns %}
