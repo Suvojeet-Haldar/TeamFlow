@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TeamFlow — Register</title>
+</head>
+<body>
+
+<h1>TeamFlow</h1>
+<h2>Create your organization</h2>
+
+{% if error %}
+    <p style="color:red;">{{ error }}</p>
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+
+    <p>
+        Organization Name:<br>
+        <input type="text" name="org_name" required>
+    </p>
+
+    <p>
+        Your Username:<br>
+        <input type="text" name="username" required>
+    </p>
+
+    <p>
+        Email:<br>
+        <input type="email" name="email" required>
+    </p>
+
+    <p>
+        Password:<br>
+        <input type="password" name="password" required>
+    </p>
+
+    <p>
+        Confirm Password:<br>
+        <input type="password" name="confirm_password" required>
+    </p>
+
+    <button type="submit">Create Organization</button>
+</form>
+
+<p>Already have an account? <a href="/accounts/login/">Login</a></p>
+
+</body>
+</html>

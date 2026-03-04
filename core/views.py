@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from .models import Project, Task, ActivityLog, CustomUser
-
+from .models import Project, Task, ActivityLog, CustomUser, Organization
+from django.contrib.auth import login
 
 @login_required
 def project_list(request):
@@ -101,3 +101,41 @@ def create_project(request):
         return redirect("project_detail", project_id=project.id)
 
     return render(request, "core/create_project.html")
+
+def register(request):
+    if request.user.is_authenticated:
+        return redirect("project_list")
+
+    error = None
+
+    if request.method == "POST":
+        org_name = request.POST.get("org_name")
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        confirm_password = request.POST.get("confirm_password")
+
+        if password != confirm_password:
+            error = "Passwords do not match."
+
+        elif CustomUser.objects.filter(username=username).exists():
+            error = "Username already taken."
+
+        elif Organization.objects.filter(name=org_name).exists():
+            error = "An organization with that name already exists."
+
+        else:
+            org = Organization.objects.create(name=org_name)
+
+            user = CustomUser.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                organization=org,
+                role="OWNER"
+            )
+
+            login(request, user)
+            return redirect("project_list")
+
+    return render(request, "core/register.html", {"error": error})
