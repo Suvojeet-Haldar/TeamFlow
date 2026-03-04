@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Assign Manager</h1>
+<p style="margin-bottom:24px;">
+    Assigning manager for <strong>{{ member.username }}</strong>
+    ({{ member.org_role.name|default:member.role }})
+</p>
+
+<form method="POST">
+    {% csrf_token %}
+    <p>
+        Select Manager:<br>
+        <select name="manager_id">
+            <option value="">— No manager —</option>
+            {% for mgr in org_managers %}
+                <option value="{{ mgr.id }}"
+                    {% if member.manager and member.manager.id == mgr.id %}selected{% endif %}>
+                    {{ mgr.username }}
+                </option>
+            {% endfor %}
+        </select>
+    </p>
+    <button type="submit">Save</button>
+    <a href="/team/" style="margin-left:12px;">Cancel</a>
+</form>
+
+{% endblock %}

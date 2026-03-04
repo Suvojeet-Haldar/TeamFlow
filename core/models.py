@@ -10,6 +10,21 @@ class Organization(models.Model):
     def __str__(self):
         return self.name
 
+class Role(models.Model):
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='roles'
+    )
+    name = models.CharField(max_length=50)
+    is_default = models.BooleanField(default=False)
+    is_manager_type = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('organization', 'name')
+
+    def __str__(self):
+        return f"{self.name} ({self.organization.name})"
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
@@ -31,6 +46,22 @@ class CustomUser(AbstractUser):
         max_length=20,
         choices=ROLE_CHOICES,
         default='VIEWER'
+    )
+
+    org_role = models.ForeignKey(
+        'Role',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='members'
+    )
+
+    manager = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='direct_reports'
     )
 
     def __str__(self):
@@ -158,6 +189,15 @@ class Invite(models.Model):
         choices=CustomUser.ROLE_CHOICES,
         default='DEVELOPER'
     )
+
+    assigned_manager = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pending_reports'
+    )
+
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

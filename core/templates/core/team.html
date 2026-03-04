@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Team — {{ request.user.organization }}</h1>
+
+<div style="background:white; padding:20px; border-radius:6px; border:1px solid #ddd; max-width:420px; margin:24px 0;">
+    <h3>{{ request.user.username }} <span style="font-size:0.75em; color:#e67e22;">● you</span></h3>
+    <p style="margin-top:6px; color:#555;">
+        Role: <strong>{% if request.user.org_role %}{{ request.user.org_role.name }}{% else %}{{ request.user.role }}{% endif %}</strong>
+    </p>
+    <p style="margin-top:4px; color:#555;">
+        Organization: <strong>{{ request.user.organization }}</strong>
+    </p>
+    {% if request.user.manager %}
+        <div style="margin-top:12px; padding:10px; background:#f4f4f4; border-radius:4px;">
+            <p style="font-size:0.85em; color:#888;">Reports to</p>
+            <p style="margin-top:4px;"><strong>{{ request.user.manager.username }}</strong>
+                — {% if request.user.manager.org_role %}{{ request.user.manager.org_role.name }}{% else %}{{ request.user.manager.role }}{% endif %}
+            </p>
+            {% if request.user.manager.email %}
+                <a href="mailto:{{ request.user.manager.email }}" style="font-size:0.85em; margin-top:4px; display:inline-block;">✉ Contact</a>
+            {% endif %}
+        </div>
+    {% elif user_role == "Owner" %}
+        <p style="margin-top:12px; color:#aaa; font-size:0.85em;">You are the owner — no manager above you.</p>
+    {% else %}
+        <div style="margin-top:12px; padding:10px; background:#f4f4f4; border-radius:4px;">
+            <p style="font-size:0.85em; color:#888;">Reports to</p>
+            <p style="margin-top:4px;"><strong>{{ org_owner.username }}</strong>
+                — {% if org_owner.org_role %}{{ org_owner.org_role.name }}{% else %}{{ org_owner.role }}{% endif %}
+            </p>
+            {% if org_owner.email %}
+                <a href="mailto:{{ org_owner.email }}" style="font-size:0.85em; margin-top:4px; display:inline-block;">✉ Contact</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+{% if direct_reports %}
+<h2 style="margin-top:32px;">Direct Reports</h2>
+<table style="width:100%; border-collapse:collapse; margin-top:12px;">
+    <thead>
+        <tr style="background:#f4f4f4;">
+            <th style="text-align:left; padding:10px;">Member</th>
+            <th style="text-align:left; padding:10px;">Role</th>
+            <th style="text-align:left; padding:10px;">Contact</th>
+            {% if user_role == "Owner" %}
+                <th style="padding:10px;"></th>
+            {% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in direct_reports %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:10px;"><strong>{{ member.username }}</strong></td>
+            <td style="padding:10px;">
+                {% if member.org_role %}{{ member.org_role.name }}{% else %}{{ member.role }}{% endif %}
+            </td>
+            <td style="padding:10px;">
+                {% if member.email %}
+                    <a href="mailto:{{ member.email }}">✉ Email</a>
+                {% else %}
+                    <span style="color:#aaa;">—</span>
+                {% endif %}
+            </td>
+            {% if user_role == "Owner" %}
+            <td style="padding:10px; display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="/team/{{ member.id }}/assign-manager/">Assign Manager</a>
+                <a href="/team/{{ member.id }}/reassign-role/">Change Role</a>
+                <a href="/team/{{ member.id }}/remove/" style="color:#e74c3c;">Remove</a>
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if user_role == "Owner" %}
+<h2 style="margin-top:40px;">All Members</h2>
+<table style="width:100%; border-collapse:collapse; margin-top:12px;">
+    <thead>
+        <tr style="background:#f4f4f4;">
+            <th style="text-align:left; padding:10px;">Member</th>
+            <th style="text-align:left; padding:10px;">Role</th>
+            <th style="text-align:left; padding:10px;">Manager</th>
+            <th style="text-align:left; padding:10px;">Contact</th>
+            <th style="padding:10px;"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in all_members %}
+        {% if member != request.user %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:10px;"><strong>{{ member.username }}</strong></td>
+            <td style="padding:10px;">
+                {% if member.org_role %}{{ member.org_role.name }}{% else %}{{ member.role }}{% endif %}
+            </td>
+            <td style="padding:10px; color:#666;">
+                {% if member.manager %}{{ member.manager.username }}{% else %}<span style="color:#aaa;">—</span>{% endif %}
+            </td>
+            <td style="padding:10px;">
+                {% if member.email %}<a href="mailto:{{ member.email }}">✉ Email</a>{% else %}<span style="color:#aaa;">—</span>{% endif %}
+            </td>
+            <td style="padding:10px;">
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <a href="/team/{{ member.id }}/assign-manager/">Assign Manager</a>
+                    <a href="/team/{{ member.id }}/reassign-role/">Change Role</a>
+                    <a href="/team/{{ member.id }}/remove/" style="color:#e74c3c;">Remove</a>
+                </div>
+            </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<p style="margin-top:32px;"><a href="/projects/">← Back to Projects</a></p>
+
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Remove Member</h1>
+<div style="background:#fff3f3; border-left:4px solid #e74c3c; padding:16px; border-radius:4px; max-width:480px; margin-top:24px;">
+    <p>You are about to remove <strong>{{ member.username }}</strong>
+    ({% if member.org_role %}{{ member.org_role.name }}{% else %}{{ member.role }}{% endif %}) from your organization.</p>
+    <p style="margin-top:8px; color:#888; font-size:0.9em;">
+        Their manager assignments will be cleared. This cannot be undone.
+    </p>
+</div>
+
+<form method="POST" style="margin-top:24px;">
+    {% csrf_token %}
+    <button type="submit" style="background:#e74c3c; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">
+        Yes, Remove {{ member.username }}
+    </button>
+    <a href="/team/" style="margin-left:12px;">Cancel</a>
+</form>
+
+{% endblock %}

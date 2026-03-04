@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Change Role</h1>
+<p style="margin-bottom:24px;">
+    Changing role for <strong>{{ member.username }}</strong>
+    (current: {% if member.org_role %}{{ member.org_role.name }}{% else %}{{ member.role }}{% endif %})
+</p>
+
+<form method="POST">
+    {% csrf_token %}
+    <p>
+        New Role:<br>
+        <select name="role_id">
+            {% for role in org_roles %}
+                <option value="{{ role.id }}"
+                    {% if member.org_role and member.org_role.id == role.id %}selected{% endif %}>
+                    {{ role.name }}{% if role.is_manager_type %} (manager-type){% endif %}
+                </option>
+            {% endfor %}
+        </select>
+    </p>
+    <button type="submit">Save</button>
+    <a href="/team/" style="margin-left:12px;">Cancel</a>
+</form>
+
+{% endblock %}

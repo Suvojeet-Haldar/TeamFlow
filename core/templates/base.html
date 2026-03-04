@@ -64,7 +64,13 @@
     <div class="user-info">
         <span>🏢 {{ user.organization }}</span>
         <span>👤 {{ user.username }}</span>
-        <span>{{ user.role }}</span>
+        <span>{% if user.org_role %}{{ user.org_role.name }}{% else %}{{ user.role }}{% endif %}</span>
+
+        <a href="/team/" style="color:white; font-size:0.85em;">👥 Team</a>
+
+        {% if user.org_role.name == "Owner" or user.role == "OWNER" %}
+            <a href="/settings/" style="color:white; font-size:0.85em;">⚙ Settings</a>
+        {% endif %}
         <form method="POST" action="/accounts/logout/">
             {% csrf_token %}
             <button type="submit">Logout</button>

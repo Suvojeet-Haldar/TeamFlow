@@ -39,12 +39,23 @@
     </p>
     <p>
         Role:<br>
-        <select name="role">
-            <option value="MANAGER">Manager</option>
-            <option value="DEVELOPER">Developer</option>
-            <option value="VIEWER">Viewer</option>
+        <select name="role_id">
+            {% for role in org_roles %}
+                <option value="{{ role.id }}">{{ role.name }}</option>
+            {% endfor %}
         </select>
     </p>
+
+    <p>
+        Assign Manager: <span style="color:#aaa; font-size:0.85em;">(optional)</span><br>
+        <select name="manager_id">
+            <option value="">— Assign later —</option>
+            {% for mgr in org_managers %}
+                <option value="{{ mgr.id }}">{{ mgr.username }}</option>
+            {% endfor %}
+        </select>
+    </p>
+
     <button type="submit">Generate Invite Link</button>
 </form>
 

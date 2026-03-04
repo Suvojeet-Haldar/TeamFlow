@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Organization Settings</h1>
+<p style="margin-bottom:24px;">Manage roles for <strong>{{ request.user.organization }}</strong></p>
+
+{% if error %}
+    <p style="color:red; margin-bottom:16px;">{{ error }}</p>
+{% endif %}
+
+<h2>Roles</h2>
+<table style="width:100%; border-collapse:collapse; margin-bottom:24px;">
+    <thead>
+        <tr style="background:#f4f4f4;">
+            <th style="text-align:left; padding:8px;">Role Name</th>
+            <th style="text-align:left; padding:8px;">Type</th>
+            <th style="text-align:left; padding:8px;">Manager-capable</th>
+            <th style="padding:8px;"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for role in roles %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:8px;">{{ role.name }}</td>
+            <td style="padding:8px; color:#888;">
+                {% if role.is_default %}Default{% else %}Custom{% endif %}
+            </td>
+            <td style="padding:8px;">
+                {% if role.name != "Owner" %}
+                <form method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_manager_type">
+                    <input type="hidden" name="role_id" value="{{ role.id }}">
+                    <button type="submit" style="background:{% if role.is_manager_type %}#27ae60{% else %}#bdc3c7{% endif %}; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.85em;">
+                        {% if role.is_manager_type %}✓ Yes{% else %}No{% endif %}
+                    </button>
+                </form>
+                {% else %}
+                    <span style="color:#aaa;">—</span>
+                {% endif %}
+            </td>
+            <td style="padding:8px;">
+                {% if not role.is_default %}
+                <form method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="role_id" value="{{ role.id }}">
+                    <button type="submit" style="color:red; background:none; border:none; cursor:pointer;">
+                        Delete
+                    </button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Add Custom Role</h2>
+<form method="POST" style="margin-top:12px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <p>
+        Role Name:<br>
+        <input type="text" name="role_name" required placeholder="e.g. Senior Manager">
+    </p>
+    <p>
+        <label>
+            <input type="checkbox" name="is_manager_type">
+            This role can be assigned as a manager
+        </label>
+    </p>
+    <button type="submit">Add Role</button>
+</form>
+
+<p style="margin-top:24px;"><a href="/projects/">← Back to Projects</a></p>
+
+{% endblock %}
