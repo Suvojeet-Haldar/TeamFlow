@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Invite a Team Member</h1>
+<p style="margin-bottom:24px;">Organization: <strong>{{ request.user.organization }}</strong></p>
+
+{% if error %}
+    <p style="color:red;">{{ error }}</p>
+{% endif %}
+
+{% if invite_link %}
+    <div style="background:#f0f8e8; padding:16px; border-radius:6px; margin-bottom:24px;">
+        <p><strong>Invite link generated. Share this with your team member:</strong></p>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <code id="invite-link" style="word-break:break-all; flex:1;">{{ invite_link }}</code>
+            <button onclick="copyLink()" style="white-space:nowrap;">Copy Link</button>
+        </div>
+        <p id="copy-confirm" style="color:green; display:none; margin-top:6px;">Copied!</p>
+    </div>
+    <script>
+        function copyLink() {
+            const link = document.getElementById('invite-link').textContent;
+            navigator.clipboard.writeText(link).then(function() {
+                document.getElementById('copy-confirm').style.display = 'block';
+                setTimeout(function() {
+                    document.getElementById('copy-confirm').style.display = 'none';
+                }, 2000);
+            });
+        }
+    </script>
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+    <p>
+        Email:<br>
+        <input type="email" name="email" required>
+    </p>
+    <p>
+        Role:<br>
+        <select name="role">
+            <option value="MANAGER">Manager</option>
+            <option value="DEVELOPER">Developer</option>
+            <option value="VIEWER">Viewer</option>
+        </select>
+    </p>
+    <button type="submit">Generate Invite Link</button>
+</form>
+
+<p style="margin-top:16px;"><a href="/projects/">← Back to Projects</a></p>
+
+{% endblock %}

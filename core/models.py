@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+import uuid
 
 
 class Organization(models.Model):
@@ -138,3 +139,28 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f"{self.user} — {self.action} — {self.timestamp:%Y-%m-%d %H:%M}"
+    
+class Invite(models.Model):
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='invites'
+    )
+    invited_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='sent_invites'
+    )
+    email = models.EmailField()
+    role = models.CharField(
+        max_length=20,
+        choices=CustomUser.ROLE_CHOICES,
+        default='DEVELOPER'
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    accepted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.email} → {self.organization.name}"

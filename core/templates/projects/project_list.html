@@ -1,24 +1,35 @@
-<div style="display:flex; justify-content:space-between; align-items:center;">
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="welcome-banner">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1>Projects</h1>
-    <div>
-        <a href="/projects/create/">
-            <button>+ New Project</button>
-        </a>
-        <form method="POST" action="/accounts/logout/" style="display:inline;">
-            {% csrf_token %}
-            <button type="submit">Logout</button>
-        </form>
+    <div style="display:flex; gap:8px;">
+        {% if request.user.role in "OWNER,MANAGER" %}
+            <a href="/invite/"><button>+ Invite Member</button></a>
+        {% endif %}
+        <a href="/projects/create/"><button>+ New Project</button></a>
     </div>
 </div>
 
 {% if projects %}
     <ul>
         {% for project in projects %}
-            <li>
+            <li style="margin-bottom:8px;">
                 <a href="/projects/{{ project.id }}/">{{ project.name }}</a>
             </li>
         {% endfor %}
     </ul>
 {% else %}
-    <p>No projects yet. Create your first one.</p>
+    <p style="color:#aaa;">No projects yet. Create your first one.</p>
 {% endif %}
+
+{% endblock %}

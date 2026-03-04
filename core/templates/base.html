@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TeamFlow</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #f9f9f9; color: #222; }
+
+        .navbar {
+            background: #1a1a2e;
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.9em;
+        }
+        .navbar .user-info span {
+            background: #ffffff22;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+        .navbar form { display: inline; }
+        .navbar button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .content {
+            padding: 32px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .welcome-banner {
+            background: #eaf4fb;
+            border-left: 4px solid #3498db;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<nav class="navbar">
+    <a href="/projects/">TeamFlow</a>
+    <div class="user-info">
+        <span>🏢 {{ user.organization }}</span>
+        <span>👤 {{ user.username }}</span>
+        <span>{{ user.role }}</span>
+        <form method="POST" action="/accounts/logout/">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+    </div>
+</nav>
+{% endif %}
+
+<div class="content">
+    {% block content %}
+    {% endblock %}
+</div>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>TeamFlow</h1>
+<h2 style="margin-top:8px;">You've been invited to join <strong>{{ invite.organization }}</strong></h2>
+<p style="margin-bottom:24px;">Role: <strong>{{ invite.role }}</strong></p>
+
+{% if error %}
+    <p style="color:red;">{{ error }}</p>
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+    <p>
+        Username:<br>
+        <input type="text" name="username" required>
+    </p>
+    <p>
+        Password:<br>
+        <input type="password" name="password" required>
+    </p>
+    <p>
+        Confirm Password:<br>
+        <input type="password" name="confirm_password" required>
+    </p>
+    <button type="submit">Join {{ invite.organization }}</button>
+</form>
+
+{% endblock %}

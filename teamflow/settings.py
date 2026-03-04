@@ -121,6 +121,6 @@ STATIC_URL = "static/"
 
 AUTH_USER_MODEL = 'core.CustomUser'
 
+LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/projects/'
-
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGOUT_REDIRECT_URL = '/login/'
