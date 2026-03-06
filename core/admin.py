@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Organization, CustomUser, Project, Task, ActivityLog, Invite, Role
+from .models import Organization, CustomUser, Project, Task, ActivityLog, Invite, Role, SOPDocument
 
 admin.site.register(Organization)
 admin.site.register(CustomUser)
@@ -8,3 +8,4 @@ admin.site.register(Task)
 admin.site.register(ActivityLog)
 admin.site.register(Invite)
 admin.site.register(Role)
+admin.site.register(SOPDocument)

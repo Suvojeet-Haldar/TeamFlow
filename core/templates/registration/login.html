@@ -1,31 +1,72 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="light">
 <head>
-    <title>TeamFlow — Login</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeamFlow — Log In</title>
+  <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/landing.css' %}">
 </head>
 <body>
 
-<h1>TeamFlow</h1>
-<h2>Login</h2>
+<script>
+  (function(){
+    var t = localStorage.getItem('tf-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
 
-{% if error %}
-    <p style="color:red;">{{ error }}</p>
-{% endif %}
+<button class="auth-dark-toggle" onclick="toggleDark()" id="dark-btn">🌙</button>
 
-<form method="POST">
-    {% csrf_token %}
-    <p>
-        Username:<br>
-        <input type="text" name="username" autofocus>
-    </p>
-    <p>
-        Password:<br>
-        <input type="password" name="password">
-    </p>
-    <button type="submit">Login</button>
-</form>
+<div class="auth-page">
+  <div class="auth-box">
+    <div class="auth-logo">TeamFlow</div>
+    <div class="auth-tagline">Know Your Team. Ship Your Projects.</div>
 
-<p>New organization? <a href="/register/">Register here</a></p>
+    <h2 class="auth-title">Welcome back</h2>
+
+    {% if error %}
+    <div class="auth-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/login/" autocomplete="off">
+      {% csrf_token %}
+
+      <div class="auth-form-group">
+        <label class="auth-label" for="login-username">Username</label>
+        <input class="auth-input" type="text" id="login-username" name="username"
+               required autofocus autocomplete="username" placeholder="your username">
+      </div>
+
+      <div class="auth-form-group">
+        <label class="auth-label" for="login-password">Password</label>
+        <div class="auth-password-wrap">
+          <input class="auth-input" type="password" id="login-password" name="password"
+                 required autocomplete="current-password" placeholder="••••••••">
+          <button type="button" class="auth-eye" onclick="togglePassword('login-password', this)">👁</button>
+        </div>
+      </div>
+
+      <button type="submit" class="auth-btn">Log in →</button>
+    </form>
+
+    <div class="auth-footer">
+      New organization?
+      <a href="/register/">Create your workspace</a>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'core/js/main.js' %}"></script>
+<script>
+function togglePassword(id, btn) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+</script>
 
 </body>
 </html>

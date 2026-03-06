@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %} — Projects{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-info">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="page-header">
+  <h1>Projects</h1>
+  <div style="display:flex; gap:10px;">
+    {% if request.user.role == "OWNER" or request.user.org_role.name == "Owner" %}
+      <a href="/invite/" class="btn btn-ghost">+ Invite Member</a>
+      <a href="/projects/create/" class="btn btn-primary">+ New Project</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section-label section-label-active">● Active</div>
+
+{% if active_projects %}
+  <div class="project-list">
+    {% for project in active_projects %}
+    <div class="project-card">
+      <div>
+        <a href="/projects/{{ project.id }}/" class="project-card-name">{{ project.name }}</a>
+        {% if project.description %}
+          <div class="project-card-desc">{{ project.description }}</div>
+        {% endif %}
+      </div>
+      <div class="project-card-meta">
+        {% if project.manager %}
+          <a href="/member/{{ project.manager.id }}/" style="font-weight:600; color:var(--text-primary);">
+            👤 {{ project.manager.username }}
+          </a>
+          <div style="font-size:0.80rem; color:var(--text-muted); margin-top:2px;">
+            {% if project.manager.org_role %}{{ project.manager.org_role.name }}{% endif %}
+          </div>
+        {% else %}
+          <span style="color:var(--warning); font-size:0.88rem; font-weight:500;">Manager not assigned</span>
+        {% endif %}
+        {% if request.user.role == "OWNER" or request.user.org_role.name == "Owner" %}
+          <div class="project-card-actions">
+            <a href="/projects/{{ project.id }}/assign-manager/"
+               style="color:var(--text-muted);">
+              {% if project.manager %}Change Manager{% else %}Assign Manager{% endif %}
+            </a>
+            <a href="/projects/{{ project.id }}/complete/"
+               style="color:var(--text-muted);">Complete</a>
+          </div>
+        {% elif project.manager and project.manager == request.user %}
+          <div class="project-card-actions">
+            <a href="/projects/{{ project.id }}/complete/"
+               style="color:var(--text-muted);">Complete</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p style="color:var(--text-muted); margin-bottom:36px;">No active projects yet.</p>
+{% endif %}
+
+{% if completed_projects %}
+<details style="margin-top:8px;">
+  <summary>
+    <div class="summary-row">
+      <span class="summary-arrow">▶</span>
+      <span>Completed ({{ completed_projects|length }})</span>
+    </div>
+  </summary>
+  <div class="project-list" style="margin-top:14px;">
+    {% for project in completed_projects %}
+    <div class="project-card completed">
+      <div>
+        <a href="/projects/{{ project.id }}/" class="project-card-name"
+           style="color:var(--text-muted);">{{ project.name }}</a>
+        {% if project.completed_at %}
+          <div class="project-card-desc">
+            Completed
+            <time class="local-time" datetime="{{ project.completed_at|date:'c' }}">
+              {{ project.completed_at|date:"M d, Y" }}
+            </time>
+          </div>
+        {% endif %}
+      </div>
+      <div class="project-card-meta">
+        {% if project.manager %}
+          <a href="/member/{{ project.manager.id }}/"
+             style="color:var(--text-muted); font-size:0.88rem;">
+            {{ project.manager.username }}
+          </a>
+        {% endif %}
+        {% if request.user.role == "OWNER" or request.user.org_role.name == "Owner" %}
+          <div class="project-card-actions">
+            <a href="/projects/{{ project.id }}/reactivate/"
+               style="color:var(--accent);">↺ Reactivate</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+
+{% endblock %}

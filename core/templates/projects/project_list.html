@@ -4,32 +4,107 @@
 
 {% if messages %}
     {% for message in messages %}
-        <div class="welcome-banner">
-            {{ message }}
-        </div>
+        <div class="welcome-banner">{{ message }}</div>
     {% endfor %}
 {% endif %}
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
     <h1>Projects</h1>
     <div style="display:flex; gap:8px;">
-        {% if request.user.role in "OWNER,MANAGER" %}
+        {% if request.user.role == "OWNER" or request.user.org_role.name == "Owner" %}
             <a href="/invite/"><button>+ Invite Member</button></a>
+            <a href="/projects/create/"><button>+ New Project</button></a>
         {% endif %}
-        <a href="/projects/create/"><button>+ New Project</button></a>
     </div>
 </div>
 
-{% if projects %}
-    <ul>
-        {% for project in projects %}
-            <li style="margin-bottom:8px;">
-                <a href="/projects/{{ project.id }}/">{{ project.name }}</a>
-            </li>
+<p style="color:#27ae60; font-size:0.85em; text-transform:uppercase; letter-spacing:1px; font-weight:bold; margin-bottom:16px; margin-top:24px;">● Active</p>
+
+{% if active_projects %}
+    <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:40px;">
+        {% for project in active_projects %}
+        <div style="background:white; padding:16px; border-radius:6px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <a href="/projects/{{ project.id }}/" style="font-size:1.1em; font-weight:bold;">{{ project.name }}</a>
+                {% if project.description %}
+                    <p style="color:#666; font-size:0.85em; margin-top:4px;">{{ project.description }}</p>
+                {% endif %}
+            </div>
+            <div style="text-align:right; font-size:0.85em; color:#555; min-width:180px;">
+                {% if project.manager %}
+                    <a href="/member/{{ project.manager.id }}/" style="color:#3498db;">
+                        👤 {{ project.manager.username }}
+                    </a>
+                    <div style="color:#aaa; font-size:0.8em;">
+                        {% if project.manager.org_role %}{{ project.manager.org_role.name }}{% endif %}
+                    </div>
+                {% else %}
+                    <span style="color:#e67e22;">Manager not assigned</span>
+                {% endif %}
+                {% if request.user.role == "OWNER" or request.user.org_role.name == "Owner" %}
+                    <div style="margin-top:6px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+                        <a href="/projects/{{ project.id }}/assign-manager/" style="font-size:0.8em; color:#3498db;">
+                            {% if project.manager %}Change Manager{% else %}Assign Manager{% endif %}
+                        </a>
+                        <a href="/projects/{{ project.id }}/complete/" style="font-size:0.8em; color:#888;">Complete</a>
+                    </div>
+                {% elif project.manager and project.manager == request.user %}
+                    <div style="margin-top:6px;">
+                        <a href="/projects/{{ project.id }}/complete/" style="font-size:0.8em; color:#888;">Complete</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
         {% endfor %}
-    </ul>
+    </div>
 {% else %}
-    <p style="color:#aaa;">No projects yet. Create your first one.</p>
+    <p style="color:#aaa; margin-bottom:40px;">No active projects.</p>
 {% endif %}
+
+{% if completed_projects %}
+<details style="margin-top:8px;">
+    <summary style="cursor:pointer; font-size:0.85em; text-transform:uppercase; letter-spacing:1px; color:#888; font-weight:bold; list-style:none; display:flex; align-items:center; gap:8px; user-select:none;">
+        <span class="summary-arrow" style="display:inline-block; transition:transform 0.2s;">▶</span>
+        Completed ({{ completed_projects|length }})
+    </summary>
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+        {% for project in completed_projects %}
+        <div style="background:#f9f9f9; padding:16px; border-radius:6px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center; opacity:0.85;">
+            <div>
+                <a href="/projects/{{ project.id }}/" style="font-size:1.1em; font-weight:bold; color:#888;">{{ project.name }}</a>
+                {% if project.completed_at %}
+                    <p style="color:#aaa; font-size:0.8em; margin-top:2px;">
+                        Completed <time class="local-time" datetime="{{ project.completed_at|date:'c' }}">{{ project.completed_at|date:"M d, Y" }}</time>
+                    </p>
+                {% endif %}
+            </div>
+            <div style="text-align:right; font-size:0.85em;">
+                {% if project.manager %}
+                    <a href="/member/{{ project.manager.id }}/" style="color:#aaa;">{{ project.manager.username }}</a>
+                {% endif %}
+                {% if request.user.role == "OWNER" or request.user.org_role.name == "Owner" %}
+                    <div style="margin-top:6px;">
+                        <a href="/projects/{{ project.id }}/reactivate/" style="font-size:0.8em; color:#3498db;">Reactivate</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</details>
+{% endif %}
+
+<script>
+document.querySelectorAll('details').forEach(function(el) {
+    el.addEventListener('toggle', function() {
+        const arrow = el.querySelector('.summary-arrow');
+        if (arrow) arrow.style.transform = el.open ? 'rotate(90deg)' : 'rotate(0deg)';
+    });
+});
+document.querySelectorAll('.local-time').forEach(function(el) {
+    const utc = new Date(el.getAttribute('datetime'));
+    el.textContent = utc.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+});
+</script>
 
 {% endblock %}

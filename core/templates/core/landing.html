@@ -1,0 +1,219 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeamFlow — Know Your Team. Ship Your Projects.</title>
+  <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/landing.css' %}">
+</head>
+<body>
+
+<script>
+  (function(){
+    var t = localStorage.getItem('tf-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+
+<!-- Navbar -->
+<nav class="landing-nav">
+  <span class="landing-nav-brand">TeamFlow</span>
+  <div class="landing-nav-links">
+    <button onclick="toggleDark()" id="dark-btn"
+      style="background:rgba(255,255,255,0.08); border:none; color:rgba(255,255,255,0.7);
+             padding:6px 12px; border-radius:6px; cursor:pointer; font-size:0.9rem;">🌙</button>
+    <a href="/login/" class="landing-nav-login">Log in</a>
+    <a href="/register/" class="landing-nav-cta">Get Started Free</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-glow-1"></div>
+  <div class="hero-glow-2"></div>
+
+  <div class="hero-badge">
+    🚀 &nbsp;Multi-Tenant Project Management SaaS
+  </div>
+
+  <h1 class="hero-title">
+    Know Your Team.<br>
+    <span class="highlight">Ship Your Projects.</span>
+  </h1>
+
+  <p class="hero-subtitle">
+    TeamFlow gives organizations a unified platform to manage projects, 
+    assign tasks, build team hierarchies, and track progress — 
+    all in one secure, role-based workspace.
+  </p>
+
+  <div class="hero-actions">
+    <a href="/register/" class="hero-btn-primary">Start for Free →</a>
+    <a href="/login/" class="hero-btn-secondary">Log in to your org</a>
+  </div>
+
+  <div class="hero-stats">
+    <div>
+      <div class="hero-stat-num">Multi-Tenant</div>
+      <div class="hero-stat-label">Complete Isolation</div>
+    </div>
+    <div>
+      <div class="hero-stat-num">Role-Based</div>
+      <div class="hero-stat-label">Access Control</div>
+    </div>
+    <div>
+      <div class="hero-stat-num">Kanban</div>
+      <div class="hero-stat-label">Task Boards</div>
+    </div>
+    <div>
+      <div class="hero-stat-num">SOP</div>
+      <div class="hero-stat-label">Document Management</div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+  <div class="features-inner">
+    <div class="section-eyebrow">Everything you need</div>
+    <h2 class="section-title">Built for real teams, not spreadsheets</h2>
+    <p class="section-subtitle">
+      From project creation to team hierarchy, 
+      TeamFlow handles the full lifecycle of how your organization works.
+    </p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🏢</span>
+        <div class="feature-title">Multi-Tenant Organizations</div>
+        <p class="feature-desc">
+          Each organization gets a fully isolated workspace. 
+          Members, projects, and data are completely separated — 
+          no cross-org data leakage, ever.
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔐</span>
+        <div class="feature-title">Role-Based Access Control</div>
+        <p class="feature-desc">
+          Define custom roles — Owner, Senior Manager, Developer, Viewer and more. 
+          Mark roles as manager-capable and control exactly what each person can see and do.
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📋</span>
+        <div class="feature-title">Kanban Task Boards</div>
+        <p class="feature-desc">
+          Visual task management with Todo, In Progress, Blocked, and Done columns. 
+          Assign tasks to team members and track priority, due dates, and status in one view.
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">👥</span>
+        <div class="feature-title">Team Hierarchy & Reporting</div>
+        <p class="feature-desc">
+          Build org hierarchies with manager chains. 
+          Every member knows who they report to. 
+          Owners get a complete view of the entire organization.
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">✉</span>
+        <div class="feature-title">Token-Based Invitations</div>
+        <p class="feature-desc">
+          Invite members securely with unique one-time tokens. 
+          Set roles, assign managers, and optionally set contract expiry dates — 
+          all before they even join.
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📄</span>
+        <div class="feature-title">SOP Document Management</div>
+        <p class="feature-desc">
+          Attach Standard Operating Procedure documents and links to any project. 
+          Supports PDF, DOCX, XLSX, and more. 
+          Full audit trail of uploads, renames, and deletions.
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <div class="feature-title">Activity Audit Log</div>
+        <p class="feature-desc">
+          Every action — task creation, status changes, member additions, 
+          project completions — is logged with timestamps and user attribution.
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🌙</span>
+        <div class="feature-title">Dark Mode & Modern UI</div>
+        <p class="feature-desc">
+          A clean, professional interface that works in both light and dark mode. 
+          Built with a full CSS design system for consistency across every page.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how-it-works">
+  <div class="features-inner">
+    <div class="section-eyebrow">How it works</div>
+    <h2 class="section-title">Up and running in minutes</h2>
+    <p class="section-subtitle">No complex setup. No long onboarding. Just create and go.</p>
+
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Create your organization</div>
+        <p class="step-desc">Register your org in seconds. You're the owner — your workspace, your rules.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Invite your team</div>
+        <p class="step-desc">Generate secure invite links. Assign roles and reporting managers before they join.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Create projects</div>
+        <p class="step-desc">Spin up projects, assign a project manager, and add team members instantly.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-title">Ship work</div>
+        <p class="step-desc">Create tasks on the Kanban board, track progress, and complete projects with confidence.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h1 class="hero-title">
+    Ready to organize<br>
+    <span class="highlight">your team?</span>
+  </h1>
+  <p class="hero-subtitle">
+    Create your organization for free. 
+    No credit card required. No time limit.
+  </p>
+  <div class="hero-actions">
+    <a href="/register/" class="hero-btn-primary">Create your organization →</a>
+    <a href="/login/" class="hero-btn-secondary">Already have an account?</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="landing-footer">
+  <div class="landing-footer-brand">TeamFlow</div>
+  <div class="landing-footer-copy">
+    Built with Django · Multi-Tenant SaaS · Role-Based Access Control
+  </div>
+</footer>
+
+<script src="{% static 'core/js/main.js' %}"></script>
+
+</body>
+</html>

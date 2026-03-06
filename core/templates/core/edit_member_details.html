@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Edit Member Details</h1>
+<p style="margin-bottom:24px; color:#555;">
+    Editing details for <strong>{{ member.username }}</strong>
+    ({{ member.employee_id|default:"No ID" }})
+</p>
+
+<form method="POST" style="max-width:400px;">
+    {% csrf_token %}
+    <p>
+        Employee ID:<br>
+        <input type="text" name="employee_id" value="{{ member.employee_id }}">
+        <span style="font-size:0.8em; color:#aaa; display:block; margin-top:2px;">
+            Current: {{ member.employee_id|default:"Not set" }}
+        </span>
+    </p>
+    <p style="margin-top:12px;">
+        Joined Date:<br>
+        <input type="date" name="joined_date" value="{{ member.joined_date|default:'' }}">
+        <span style="font-size:0.8em; color:#aaa; display:block; margin-top:2px;">
+            Backfilled from account creation date if available.
+        </span>
+    </p>
+    <p style="margin-top:12px;">
+        Contract Expiry: <span style="color:#aaa; font-size:0.85em;">(optional)</span><br>
+        <input type="date" name="expiry_date" value="{{ member.expiry_date|default:'' }}">
+    </p>
+    <div style="margin-top:20px;">
+        <button type="submit">Save</button>
+        <a href="/member/{{ member.id }}/" style="margin-left:12px;">Cancel</a>
+    </div>
+</form>
+
+{% endblock %}

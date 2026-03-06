@@ -1,122 +1,150 @@
+<!-- ══════════════════════════════════════════════════════════
+     FILE: core/templates/core/team.html
+     ══════════════════════════════════════════════════════════ -->
 {% extends "base.html" %}
+{% block title %} — Team{% endblock %}
 
 {% block content %}
 
-<h1>Team — {{ request.user.organization }}</h1>
-
-<div style="background:white; padding:20px; border-radius:6px; border:1px solid #ddd; max-width:420px; margin:24px 0;">
-    <h3>{{ request.user.username }} <span style="font-size:0.75em; color:#e67e22;">● you</span></h3>
-    <p style="margin-top:6px; color:#555;">
-        Role: <strong>{% if request.user.org_role %}{{ request.user.org_role.name }}{% else %}{{ request.user.role }}{% endif %}</strong>
-    </p>
-    <p style="margin-top:4px; color:#555;">
-        Organization: <strong>{{ request.user.organization }}</strong>
-    </p>
-    {% if request.user.manager %}
-        <div style="margin-top:12px; padding:10px; background:#f4f4f4; border-radius:4px;">
-            <p style="font-size:0.85em; color:#888;">Reports to</p>
-            <p style="margin-top:4px;"><strong>{{ request.user.manager.username }}</strong>
-                — {% if request.user.manager.org_role %}{{ request.user.manager.org_role.name }}{% else %}{{ request.user.manager.role }}{% endif %}
-            </p>
-            {% if request.user.manager.email %}
-                <a href="mailto:{{ request.user.manager.email }}" style="font-size:0.85em; margin-top:4px; display:inline-block;">✉ Contact</a>
-            {% endif %}
-        </div>
-    {% elif user_role == "Owner" %}
-        <p style="margin-top:12px; color:#aaa; font-size:0.85em;">You are the owner — no manager above you.</p>
-    {% else %}
-        <div style="margin-top:12px; padding:10px; background:#f4f4f4; border-radius:4px;">
-            <p style="font-size:0.85em; color:#888;">Reports to</p>
-            <p style="margin-top:4px;"><strong>{{ org_owner.username }}</strong>
-                — {% if org_owner.org_role %}{{ org_owner.org_role.name }}{% else %}{{ org_owner.role }}{% endif %}
-            </p>
-            {% if org_owner.email %}
-                <a href="mailto:{{ org_owner.email }}" style="font-size:0.85em; margin-top:4px; display:inline-block;">✉ Contact</a>
-            {% endif %}
-        </div>
-    {% endif %}
+<div class="page-header">
+  <h1>Team — {{ request.user.organization }}</h1>
 </div>
 
+<!-- Your card -->
+<div class="card card-sm" style="max-width:380px; margin-bottom:32px;">
+  <div style="font-weight:700; font-size:1rem;">
+    <a href="/member/{{ request.user.id }}/">{{ request.user.username }}</a>
+    <span style="color:var(--warning); font-size:0.72rem; font-weight:600; margin-left:8px;">● you</span>
+  </div>
+  <div style="color:var(--text-secondary); font-size:0.88rem; margin-top:4px;">
+    {% if request.user.org_role %}{{ request.user.org_role.name }}{% else %}{{ request.user.role }}{% endif %}
+  </div>
+  {% if request.user.org_role.name != "Owner" and request.user.role != "OWNER" %}
+    <div style="margin-top:10px; padding:10px; background:var(--bg-surface-2); border-radius:6px; font-size:0.85rem;">
+      <div style="color:var(--text-muted); font-size:0.78rem; margin-bottom:4px;">Reports to</div>
+      {% if request.user.manager %}
+        <a href="/member/{{ request.user.manager.id }}/">{{ request.user.manager.username }}</a>
+        — {% if request.user.manager.org_role %}{{ request.user.manager.org_role.name }}{% else %}{{ request.user.manager.role }}{% endif %}
+      {% else %}
+        <a href="/member/{{ org_owner.id }}/">{{ org_owner.username }}</a> — Owner
+      {% endif %}
+    </div>
+  {% else %}
+    <div style="color:var(--text-muted); font-size:0.82rem; margin-top:8px;">You are the owner — no manager above you.</div>
+  {% endif %}
+</div>
+
+<!-- Direct Reports -->
 {% if direct_reports %}
-<h2 style="margin-top:32px;">Direct Reports</h2>
-<table style="width:100%; border-collapse:collapse; margin-top:12px;">
+<h2 style="margin-bottom:14px;">Direct Reports</h2>
+<div style="overflow-x:auto; margin-bottom:40px;">
+  <table class="tf-table">
     <thead>
-        <tr style="background:#f4f4f4;">
-            <th style="text-align:left; padding:10px;">Member</th>
-            <th style="text-align:left; padding:10px;">Role</th>
-            <th style="text-align:left; padding:10px;">Contact</th>
-            {% if user_role == "Owner" %}
-                <th style="padding:10px;"></th>
-            {% endif %}
-        </tr>
+      <tr>
+        <th>Member</th>
+        <th>Role</th>
+        <th>Reports to</th>
+        <th>Project(s)</th>
+        <th>Contact</th>
+        {% if user_role == "Owner" %}<th>Actions</th>{% endif %}
+      </tr>
     </thead>
     <tbody>
-        {% for member in direct_reports %}
-        <tr style="border-bottom:1px solid #eee;">
-            <td style="padding:10px;"><strong>{{ member.username }}</strong></td>
-            <td style="padding:10px;">
-                {% if member.org_role %}{{ member.org_role.name }}{% else %}{{ member.role }}{% endif %}
-            </td>
-            <td style="padding:10px;">
-                {% if member.email %}
-                    <a href="mailto:{{ member.email }}">✉ Email</a>
-                {% else %}
-                    <span style="color:#aaa;">—</span>
-                {% endif %}
-            </td>
-            {% if user_role == "Owner" %}
-            <td style="padding:10px; display:flex; gap:8px; flex-wrap:wrap;">
-                <a href="/team/{{ member.id }}/assign-manager/">Assign Manager</a>
-                <a href="/team/{{ member.id }}/reassign-role/">Change Role</a>
-                <a href="/team/{{ member.id }}/remove/" style="color:#e74c3c;">Remove</a>
-            </td>
-            {% endif %}
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% endif %}
-
-{% if user_role == "Owner" %}
-<h2 style="margin-top:40px;">All Members</h2>
-<table style="width:100%; border-collapse:collapse; margin-top:12px;">
-    <thead>
-        <tr style="background:#f4f4f4;">
-            <th style="text-align:left; padding:10px;">Member</th>
-            <th style="text-align:left; padding:10px;">Role</th>
-            <th style="text-align:left; padding:10px;">Manager</th>
-            <th style="text-align:left; padding:10px;">Contact</th>
-            <th style="padding:10px;"></th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for member in all_members %}
-        {% if member != request.user %}
-        <tr style="border-bottom:1px solid #eee;">
-            <td style="padding:10px;"><strong>{{ member.username }}</strong></td>
-            <td style="padding:10px;">
-                {% if member.org_role %}{{ member.org_role.name }}{% else %}{{ member.role }}{% endif %}
-            </td>
-            <td style="padding:10px; color:#666;">
-                {% if member.manager %}{{ member.manager.username }}{% else %}<span style="color:#aaa;">—</span>{% endif %}
-            </td>
-            <td style="padding:10px;">
-                {% if member.email %}<a href="mailto:{{ member.email }}">✉ Email</a>{% else %}<span style="color:#aaa;">—</span>{% endif %}
-            </td>
-            <td style="padding:10px;">
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <a href="/team/{{ member.id }}/assign-manager/">Assign Manager</a>
-                    <a href="/team/{{ member.id }}/reassign-role/">Change Role</a>
-                    <a href="/team/{{ member.id }}/remove/" style="color:#e74c3c;">Remove</a>
-                </div>
-            </td>
-        </tr>
+      {% for member in direct_reports %}
+      <tr>
+        <td><a href="/member/{{ member.id }}/">{{ member.username }}</a></td>
+        <td>{% if member.org_role %}{{ member.org_role.name }}{% else %}{{ member.role }}{% endif %}</td>
+        <td style="color:var(--text-secondary); font-size:0.87rem;">
+          {% if member.manager %}
+            <a href="/member/{{ member.manager.id }}/" style="color:var(--text-secondary);">{{ member.manager.username }}</a>
+          {% else %}
+            <a href="/member/{{ org_owner.id }}/" style="color:var(--text-secondary);">{{ org_owner.username }}</a>
+            <span style="color:var(--text-muted); font-size:0.78rem;"> (default)</span>
+          {% endif %}
+        </td>
+        <td style="font-size:0.85rem;">
+          {% for proj in member.projects.all %}
+            <div><a href="/projects/{{ proj.id }}/">{{ proj.name }}</a></div>
+          {% empty %}<span style="color:var(--text-muted);">—</span>{% endfor %}
+        </td>
+        <td>
+          {% if member.email %}
+            <a href="mailto:{{ member.email }}" class="btn btn-ghost btn-sm">✉ Email</a>
+          {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+        </td>
+        {% if user_role == "Owner" %}
+        <td>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; font-size:0.82rem;">
+            <a href="/team/{{ member.id }}/assign-manager/" style="color:var(--accent);">Assign Manager</a>
+            <a href="/team/{{ member.id }}/assign-project/" style="color:var(--accent);">Assign Project</a>
+            <a href="/team/{{ member.id }}/reassign-role/" style="color:var(--accent);">Change Role</a>
+            <a href="/team/{{ member.id }}/remove/" style="color:var(--danger);">Remove</a>
+          </div>
+        </td>
         {% endif %}
-        {% endfor %}
+      </tr>
+      {% endfor %}
     </tbody>
-</table>
+  </table>
+</div>
+{% else %}
+<p style="color:var(--text-muted); margin-bottom:32px;">No direct reports yet.</p>
 {% endif %}
 
-<p style="margin-top:32px;"><a href="/projects/">← Back to Projects</a></p>
+<!-- Rest of Org (Owner only) -->
+{% if all_members %}
+<h2 style="margin-bottom:6px;">Rest of the Org</h2>
+<p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:14px;">Members not directly reporting to you.</p>
+<div style="overflow-x:auto;">
+  <table class="tf-table">
+    <thead>
+      <tr>
+        <th>Member</th>
+        <th>Role</th>
+        <th>Reports to</th>
+        <th>Project(s)</th>
+        <th>Contact</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for member in all_members %}
+      <tr>
+        <td><a href="/member/{{ member.id }}/">{{ member.username }}</a></td>
+        <td>{% if member.org_role %}{{ member.org_role.name }}{% else %}{{ member.role }}{% endif %}</td>
+        <td style="color:var(--text-secondary); font-size:0.87rem;">
+          {% if member.manager %}
+            <a href="/member/{{ member.manager.id }}/" style="color:var(--text-secondary);">{{ member.manager.username }}</a>
+          {% else %}
+            <a href="/member/{{ org_owner.id }}/" style="color:var(--text-secondary);">{{ org_owner.username }}</a>
+            <span style="color:var(--text-muted); font-size:0.78rem;"> (default)</span>
+          {% endif %}
+        </td>
+        <td style="font-size:0.85rem;">
+          {% for proj in member.projects.all %}
+            <div><a href="/projects/{{ proj.id }}/">{{ proj.name }}</a></div>
+          {% empty %}<span style="color:var(--text-muted);">—</span>{% endfor %}
+        </td>
+        <td>
+          {% if member.email %}
+            <a href="mailto:{{ member.email }}" class="btn btn-ghost btn-sm">✉ Email</a>
+          {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+        </td>
+        <td>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; font-size:0.82rem;">
+            <a href="/team/{{ member.id }}/assign-manager/" style="color:var(--accent);">Assign Manager</a>
+            <a href="/team/{{ member.id }}/assign-project/" style="color:var(--accent);">Assign Project</a>
+            <a href="/team/{{ member.id }}/reassign-role/" style="color:var(--accent);">Change Role</a>
+            <a href="/team/{{ member.id }}/remove/" style="color:var(--danger);">Remove</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div style="margin-top:32px;"><a href="/projects/" class="back-link">← Back to Projects</a></div>
 
 {% endblock %}

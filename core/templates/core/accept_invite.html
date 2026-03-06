@@ -1,30 +1,282 @@
-{% extends "base.html" %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeamFlow — Join {{ invite.organization }}</title>
+  <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/landing.css' %}">
+  {% if step == "2" %}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  {% endif %}
+</head>
+<body>
 
-{% block content %}
+<script>
+  (function(){
+    var t = localStorage.getItem('tf-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
 
-<h1>TeamFlow</h1>
-<h2 style="margin-top:8px;">You've been invited to join <strong>{{ invite.organization }}</strong></h2>
-<p style="margin-bottom:24px;">Role: <strong>{{ invite.role }}</strong></p>
+<button class="auth-dark-toggle" onclick="toggleDark()" id="dark-btn">🌙</button>
 
-{% if error %}
-    <p style="color:red;">{{ error }}</p>
+<div class="auth-page" style="align-items:flex-start; padding-top:60px;">
+  <div class="auth-box" style="max-width:500px;">
+
+    <div class="auth-logo">TeamFlow</div>
+
+    {% if step == "1" %}
+
+    <!-- ── Step 1: Name ────────────────────────────────────── -->
+    <div style="margin-bottom:24px;">
+      <span class="invite-org-badge" style="background:rgba(79,110,247,0.15); border:1px solid rgba(79,110,247,0.35); color:#8ba4fa; padding:5px 16px; border-radius:20px; font-size:0.82rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; display:inline-block; margin-bottom:12px;">
+        📩 &nbsp;You have been invited
+      </span>
+      <h2 class="auth-title" style="margin-bottom:6px;">Join {{ invite.organization }}</h2>
+      <p style="color:rgba(255,255,255,0.45); font-size:0.87rem;">
+        Role you'll be joining as:
+        <strong style="color:rgba(255,255,255,0.75);">{{ invite.role }}</strong>
+      </p>
+      {% if invite.assigned_manager %}
+      <p style="color:rgba(255,255,255,0.45); font-size:0.87rem; margin-top:4px;">
+        Reporting to:
+        <strong style="color:rgba(255,255,255,0.75);">{{ invite.assigned_manager.username }}</strong>
+      </p>
+      {% endif %}
+      {% if invite.contract_expiry %}
+      <div style="background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); border-radius:8px; padding:10px 14px; margin-top:12px; font-size:0.85rem; color:#fcd34d;">
+        ⚠ &nbsp;This is a contractual role. Your contract expiry date has been set to
+        <strong>{{ invite.contract_expiry }}</strong>.
+      </div>
+      {% endif %}
+    </div>
+
+    {% if error %}
+    <div class="auth-error">{{ error }}</div>
+    {% endif %}
+
+    <p style="color:rgba(255,255,255,0.35); font-size:0.82rem; margin-bottom:18px;">
+      Step 1 of 2 — Enter your name so we can suggest a username.
+    </p>
+
+    <form method="POST" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="step" value="1">
+
+      <div class="auth-form-group">
+        <label class="auth-label">First Name <span style="color:var(--danger);">*</span></label>
+        <input class="auth-input" type="text" name="first_name" required autofocus autocomplete="off">
+      </div>
+      <div class="auth-form-group">
+        <label class="auth-label">
+          Middle Name
+          <span style="color:rgba(255,255,255,0.30); font-size:0.80rem; font-weight:400;">(optional)</span>
+        </label>
+        <input class="auth-input" type="text" name="middle_name" autocomplete="off">
+      </div>
+      <div class="auth-form-group">
+        <label class="auth-label">Last Name <span style="color:var(--danger);">*</span></label>
+        <input class="auth-input" type="text" name="last_name" required autocomplete="off">
+      </div>
+
+      <button type="submit" class="auth-btn">Next →</button>
+    </form>
+
+    {% elif step == "2" %}
+
+    <!-- ── Step 2: Credentials + Profile ──────────────────── -->
+    <div style="margin-bottom:20px;">
+      <span class="invite-org-badge" style="background:rgba(79,110,247,0.15); border:1px solid rgba(79,110,247,0.35); color:#8ba4fa; padding:5px 16px; border-radius:20px; font-size:0.82rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; display:inline-block; margin-bottom:12px;">
+        📩 &nbsp;Joining {{ invite.organization }}
+      </span>
+      <h2 class="auth-title" style="margin-bottom:4px;">
+        Hello, {{ first_name }}{% if middle_name %} {{ middle_name }}{% endif %} {{ last_name }}!
+      </h2>
+      <p style="color:rgba(255,255,255,0.40); font-size:0.84rem;">Step 2 of 2 — Choose a username and set your password.</p>
+    </div>
+
+    {% if error %}
+    <div class="auth-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data" autocomplete="off" id="invite-form">
+      {% csrf_token %}
+      <input type="hidden" name="step" value="2">
+      <input type="hidden" name="first_name" value="{{ first_name }}">
+      <input type="hidden" name="middle_name" value="{{ middle_name }}">
+      <input type="hidden" name="last_name" value="{{ last_name }}">
+      <input type="hidden" name="cropped_photo" id="cropped-photo-data">
+
+      <!-- Username -->
+      <div class="auth-form-group">
+        <label class="auth-label">Username <span style="color:var(--danger);">*</span></label>
+        <p style="color:rgba(255,255,255,0.35); font-size:0.80rem; margin-bottom:8px;">
+          Tap a suggestion or type your own:
+        </p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          {% for s in suggestions %}
+          <button type="button"
+            onclick="selectUsername('{{ s }}')"
+            style="padding:5px 14px; background:rgba(79,110,247,0.15); border:1px solid rgba(79,110,247,0.4);
+                   border-radius:20px; color:#8ba4fa; cursor:pointer; font-size:0.85rem; font-family:monospace;">
+            {{ s }}
+          </button>
+          {% endfor %}
+        </div>
+        <input class="auth-input" type="text" name="username" id="username-input"
+               required autocomplete="off" placeholder="your username" value=""
+               oninput="debounceUsernameCheck(this.value, 'username-status')">
+        <div id="username-status" style="font-size:0.82rem; margin-top:5px; min-height:18px;"></div>
+      </div>
+
+      <!-- Password -->
+      <div class="auth-form-group">
+        <label class="auth-label">Password <span style="color:var(--danger);">*</span></label>
+        <div class="auth-password-wrap">
+          <input class="auth-input" type="password" id="inv-password" name="password"
+                 required autocomplete="new-password" placeholder="••••••••">
+          <button type="button" class="auth-eye" onclick="togglePassword('inv-password', this)">👁</button>
+        </div>
+      </div>
+
+      <div class="auth-form-group">
+        <label class="auth-label">Confirm Password <span style="color:var(--danger);">*</span></label>
+        <div class="auth-password-wrap">
+          <input class="auth-input" type="password" id="inv-confirm" name="confirm_password"
+                 required autocomplete="new-password" placeholder="••••••••">
+          <button type="button" class="auth-eye" onclick="togglePassword('inv-confirm', this)">👁</button>
+        </div>
+      </div>
+
+      <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:20px 0;">
+      <p style="color:rgba(255,255,255,0.30); font-size:0.80rem; margin-bottom:16px;">
+        Optional — you can add or update these later from your profile.
+      </p>
+
+      <!-- Profile Photo -->
+      <div class="auth-form-group">
+        <label class="auth-label">
+          Profile Photo
+          <span style="color:rgba(255,255,255,0.30); font-weight:400; font-size:0.79rem;">(optional)</span>
+        </label>
+        <p style="color:rgba(255,255,255,0.28); font-size:0.77rem; margin-bottom:8px;">
+          JPG, JPEG, PNG, WEBP &nbsp;·&nbsp; Max 5MB &nbsp;·&nbsp; Crop after selecting
+        </p>
+        <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+          <div>
+            <div id="photo-placeholder"
+              style="width:66px; height:66px; border-radius:50%;
+                     background:rgba(255,255,255,0.06); border:2px dashed rgba(255,255,255,0.15);
+                     display:flex; align-items:center; justify-content:center;
+                     font-size:1.6rem;">👤</div>
+            <img id="photo-final-preview"
+              style="width:66px; height:66px; border-radius:50%; object-fit:cover;
+                     border:2px solid #4f6ef7; display:none;">
+          </div>
+          <div style="flex:1; min-width:180px;">
+            <input type="file" name="profile_photo" id="photo-input"
+                   accept=".jpg,.jpeg,.png,.webp" onchange="handlePhotoSelect(this)"
+                   style="color:rgba(255,255,255,0.55); font-size:0.82rem;">
+            <p id="photo-size-error" style="color:#f87171; font-size:0.79rem; display:none; margin-top:4px;">
+              File too large. Max 5MB.
+            </p>
+            <div id="crop-area" style="display:none; margin-top:12px;">
+              <div style="border:1px solid rgba(255,255,255,0.12); border-radius:6px; overflow:hidden; max-height:200px;">
+                <img id="crop-img" style="max-width:100%; display:block;">
+              </div>
+              <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+                <button type="button" onclick="applyCrop()"
+                  style="padding:5px 14px; background:#22c55e; color:#fff; border:none;
+                         border-radius:6px; cursor:pointer; font-size:0.82rem; font-weight:600;">
+                  ✓ Apply Crop
+                </button>
+                <span id="crop-done" style="font-size:0.80rem; color:#34d399; display:none;">Cropped!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOB -->
+      <div class="auth-form-group">
+        <label class="auth-label">Date of Birth
+          <span style="color:rgba(255,255,255,0.30); font-weight:400; font-size:0.79rem;">(optional)</span>
+        </label>
+        <input class="auth-input" type="date" name="dob">
+      </div>
+
+      <!-- Phone -->
+      <div class="auth-form-group">
+        <label class="auth-label">Phone
+          <span style="color:rgba(255,255,255,0.30); font-weight:400; font-size:0.79rem;">(optional)</span>
+        </label>
+        <input class="auth-input" type="tel" name="phone" autocomplete="off" placeholder="+91 9000000000">
+      </div>
+
+      <button type="submit" class="auth-btn" id="join-btn">
+        Join {{ invite.organization }} →
+      </button>
+    </form>
+    {% endif %}
+
+  </div>
+</div>
+
+<script src="{% static 'core/js/main.js' %}"></script>
+{% if step == "2" %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<script>
+var cropper = null;
+
+function selectUsername(val) {
+  document.getElementById('username-input').value = val;
+  debounceUsernameCheck(val, 'username-status');
+}
+
+function togglePassword(id, btn) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+
+function handlePhotoSelect(input) {
+  var maxSize = 5 * 1024 * 1024;
+  var errorEl = document.getElementById('photo-size-error');
+  if (!input.files || !input.files[0]) return;
+  if (input.files[0].size > maxSize) {
+    errorEl.style.display = 'block';
+    return;
+  }
+  errorEl.style.display = 'none';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var cropImg = document.getElementById('crop-img');
+    cropImg.src = e.target.result;
+    document.getElementById('crop-area').style.display = 'block';
+    document.getElementById('crop-done').style.display = 'none';
+    if (cropper) cropper.destroy();
+    cropper = new Cropper(cropImg, { aspectRatio: 1, viewMode: 1, dragMode: 'move' });
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function applyCrop() {
+  if (!cropper) return;
+  var canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
+  var dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+  document.getElementById('cropped-photo-data').value = dataUrl;
+  var img = document.getElementById('photo-final-preview');
+  var ph = document.getElementById('photo-placeholder');
+  img.src = dataUrl;
+  img.style.display = 'block';
+  if (ph) ph.style.display = 'none';
+  document.getElementById('crop-done').style.display = 'inline';
+}
+</script>
 {% endif %}
 
-<form method="POST">
-    {% csrf_token %}
-    <p>
-        Username:<br>
-        <input type="text" name="username" required>
-    </p>
-    <p>
-        Password:<br>
-        <input type="password" name="password" required>
-    </p>
-    <p>
-        Confirm Password:<br>
-        <input type="password" name="confirm_password" required>
-    </p>
-    <button type="submit">Join {{ invite.organization }}</button>
-</form>
-
-{% endblock %}
+</body>
+</html>

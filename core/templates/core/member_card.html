@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %} — {{ member.username }}{% endblock %}
+
+{% block content %}
+
+<div class="member-card">
+  <div class="member-card-header">
+    {% if member.profile_photo %}
+      <img src="{{ member.profile_photo.url }}" alt="Profile" class="member-avatar">
+    {% else %}
+      <div class="member-avatar-placeholder">👤</div>
+    {% endif %}
+    <div>
+      <div class="member-name">
+        {{ member.username }}
+        {% if is_own_page %}
+          <span class="member-you-tag">● you</span>
+        {% endif %}
+      </div>
+      <div class="member-role-line">
+        <strong>{% if member.org_role %}{{ member.org_role.name }}{% else %}{{ member.role }}{% endif %}</strong>
+        — {{ member.organization }}
+      </div>
+      {% if member.employee_id %}
+        <div class="member-id">{{ member.employee_id }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="member-details">
+    {% if member.email %}
+    <div class="member-detail-row">
+      <span class="member-detail-label">Email</span>
+      <a href="mailto:{{ member.email }}" class="member-detail-value">{{ member.email }}</a>
+    </div>
+    {% endif %}
+    {% if member.phone %}
+    <div class="member-detail-row">
+      <span class="member-detail-label">Phone</span>
+      <span class="member-detail-value">{{ member.phone }}</span>
+    </div>
+    {% endif %}
+    {% if member.dob %}
+    <div class="member-detail-row">
+      <span class="member-detail-label">Date of Birth</span>
+      <span class="member-detail-value">{{ member.dob }}</span>
+    </div>
+    {% endif %}
+    <div class="member-detail-row">
+      <span class="member-detail-label">Joined</span>
+      <span class="member-detail-value">
+        {% if member.joined_date %}{{ member.joined_date }}
+        {% else %}<span style="color:var(--text-muted); font-style:italic;">Not recorded</span>{% endif %}
+      </span>
+    </div>
+    {% if can_see_expiry and not viewing_manager_limited %}
+    <div class="member-detail-row">
+      <span class="member-detail-label">Contract Expiry</span>
+      <span class="member-detail-value">
+        {% if member.expiry_date %}
+          <strong style="color:var(--warning);">{{ member.expiry_date }}</strong>
+        {% else %}
+          <span style="color:var(--text-muted);">Permanent</span>
+        {% endif %}
+      </span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Reports To -->
+  {% if member.org_role.name != "Owner" and member.role != "OWNER" %}
+  <div class="reports-to-box">
+    <div class="reports-to-label">Reports to</div>
+    {% if member.manager %}
+      <div>
+        {% if user_role == "Owner" or member.manager == request.user or member == request.user %}
+          <a href="/member/{{ member.manager.id }}/" style="font-weight:600;">
+            {{ member.manager.username }}
+          </a>
+        {% else %}
+          <strong>{{ member.manager.username }}</strong>
+        {% endif %}
+        <span style="color:var(--text-muted); font-size:0.85rem;">
+          — {% if member.manager.org_role %}{{ member.manager.org_role.name }}{% else %}{{ member.manager.role }}{% endif %}
+        </span>
+      </div>
+      {% if member.manager.email and member.manager == request.user or user_role == "Owner" or member == request.user %}
+        <a href="mailto:{{ member.manager.email }}" style="font-size:0.83rem; margin-top:4px; display:inline-block;">
+          ✉ Contact
+        </a>
+      {% endif %}
+    {% else %}
+      <div>
+        <a href="/member/{{ org_owner.id }}/" style="font-weight:600;">{{ org_owner.username }}</a>
+        <span style="color:var(--text-muted); font-size:0.85rem;"> — Owner
+          <span style="font-size:0.78rem;">(default)</span>
+        </span>
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Projects -->
+  {% if member.projects.all %}
+  <div style="margin-top:16px;">
+    <div style="font-size:0.78rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Projects</div>
+    {% for proj in member.projects.all %}
+      <div style="margin-bottom:4px;">
+        <a href="/projects/{{ proj.id }}/">{{ proj.name }}</a>
+        {% if proj.is_completed %}
+          <span class="badge badge-muted" style="margin-left:6px; font-size:0.72rem;">completed</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Owner sets contract expiry -->
+  {% if user_role == "Owner" and not is_own_page %}
+  <div class="expiry-box" style="margin-top:20px;">
+    <div style="font-size:0.80rem; color:var(--text-secondary); font-weight:600; margin-bottom:8px;">
+      Set Contract Expiry <span style="font-weight:400; color:var(--text-muted);">(Owner only)</span>
+    </div>
+    <form method="POST" action="/team/{{ member.id }}/set-expiry/"
+          style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      {% csrf_token %}
+      <input type="date" name="expiry_date" value="{{ member.expiry_date|default:'' }}" class="form-input" style="flex:1; min-width:160px;">
+      <button type="submit" class="btn btn-ghost btn-sm">Save</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- Edit Profile button -->
+  {% if is_own_page %}
+  <div style="margin-top:22px;">
+    <a href="/profile/edit/" class="btn btn-primary">✏ Edit Profile</a>
+  </div>
+  {% endif %}
+
+</div>
+
+<div style="margin-top:24px;">
+  <a href="/projects/" class="back-link">← Back to Projects</a>
+</div>
+
+{% endblock %}

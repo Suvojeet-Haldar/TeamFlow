@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Assign Project</h1>
+<p style="margin-bottom:24px;">Managing projects for <strong>{{ member.username }}</strong></p>
+
+<h2>Current Projects</h2>
+{% if current_projects %}
+    {% for project in current_projects %}
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:white; border:1px solid #ddd; border-radius:4px; margin-bottom:8px; max-width:500px;">
+        <span>{{ project.name }}</span>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="project_id" value="{{ project.id }}">
+            <input type="hidden" name="action" value="remove">
+            <button type="submit" style="color:red; background:none; border:none; cursor:pointer;">Remove</button>
+        </form>
+    </div>
+    {% endfor %}
+{% else %}
+    <p style="color:#aaa; margin-bottom:16px;">Not assigned to any project.</p>
+{% endif %}
+
+<h2 style="margin-top:24px;">Add to Project</h2>
+<form method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <p>
+        <select name="project_id">
+            <option value="">— Select a project —</option>
+            {% for project in org_projects %}
+                {% if project not in current_projects %}
+                    <option value="{{ project.id }}">{{ project.name }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </p>
+    <button type="submit">Add to Project</button>
+</form>
+
+<p style="margin-top:24px;"><a href="/team/">← Back to Team</a></p>
+
+{% endblock %}

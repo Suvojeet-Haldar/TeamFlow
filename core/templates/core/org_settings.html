@@ -23,9 +23,7 @@
         {% for role in roles %}
         <tr style="border-bottom:1px solid #eee;">
             <td style="padding:8px;">{{ role.name }}</td>
-            <td style="padding:8px; color:#888;">
-                {% if role.is_default %}Default{% else %}Custom{% endif %}
-            </td>
+            <td style="padding:8px; color:#888;">{% if role.is_default %}Default{% else %}Custom{% endif %}</td>
             <td style="padding:8px;">
                 {% if role.name != "Owner" %}
                 <form method="POST" style="display:inline;">
@@ -33,7 +31,7 @@
                     <input type="hidden" name="action" value="toggle_manager_type">
                     <input type="hidden" name="role_id" value="{{ role.id }}">
                     <button type="submit" style="background:{% if role.is_manager_type %}#27ae60{% else %}#bdc3c7{% endif %}; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.85em;">
-                        {% if role.is_manager_type %}✓ Yes{% else %}No{% endif %}
+                        {% if role.is_manager_type %}Yes{% else %}No{% endif %}
                     </button>
                 </form>
                 {% else %}
@@ -46,9 +44,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="role_id" value="{{ role.id }}">
-                    <button type="submit" style="color:red; background:none; border:none; cursor:pointer;">
-                        Delete
-                    </button>
+                    <button type="submit" style="color:red; background:none; border:none; cursor:pointer;">Delete</button>
                 </form>
                 {% endif %}
             </td>
@@ -65,13 +61,15 @@
         Role Name:<br>
         <input type="text" name="role_name" required placeholder="e.g. Senior Manager">
     </p>
-    <p>
+    <p style="margin-top:8px;">
         <label>
             <input type="checkbox" name="is_manager_type">
             This role can be assigned as a manager
         </label>
     </p>
-    <button type="submit">Add Role</button>
+    <div style="margin-top:12px;">
+        <button type="submit">Add Role</button>
+    </div>
 </form>
 
 <p style="margin-top:24px;"><a href="/projects/">← Back to Projects</a></p>

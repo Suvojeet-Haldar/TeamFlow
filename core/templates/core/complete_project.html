@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %} — Complete Project{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Complete Project</h1>
+  <a href="/projects/{{ project.id }}/" class="back-link">← Back to Project</a>
+</div>
+
+<div class="card" style="max-width:520px;">
+  <p style="margin-bottom:16px;">
+    You are about to mark <strong>{{ project.name }}</strong> as completed.
+    This project will move to the Completed section and task status changes will be locked.
+  </p>
+
+  {% if errors %}
+    <div class="alert alert-danger">
+      <strong>Cannot complete — resolve these first:</strong>
+      <ul style="margin-top:8px; padding-left:16px; list-style:disc;">
+        {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if warnings %}
+    <div class="alert alert-warning">
+      <strong>Warning:</strong>
+      <ul style="margin-top:8px; padding-left:16px; list-style:disc;">
+        {% for w in warnings %}<li>{{ w }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if not errors %}
+  <form method="POST">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success">✓ Mark as Completed</button>
+    <a href="/projects/{{ project.id }}/" style="margin-left:14px; color:var(--text-muted); font-size:0.88rem;">Cancel</a>
+  </form>
+  {% else %}
+    <a href="/projects/{{ project.id }}/" class="btn btn-ghost">Go back and fix issues</a>
+  {% endif %}
+</div>
+{% endblock %}

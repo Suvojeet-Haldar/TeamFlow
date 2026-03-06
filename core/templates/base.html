@@ -1,88 +1,53 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="light">
 <head>
-    <title>TeamFlow</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: sans-serif; background: #f9f9f9; color: #222; }
-
-        .navbar {
-            background: #1a1a2e;
-            color: white;
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-        .navbar .user-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-size: 0.9em;
-        }
-        .navbar .user-info span {
-            background: #ffffff22;
-            padding: 4px 10px;
-            border-radius: 4px;
-        }
-        .navbar form { display: inline; }
-        .navbar button {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .content {
-            padding: 32px 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .welcome-banner {
-            background: #eaf4fb;
-            border-left: 4px solid #3498db;
-            padding: 12px 16px;
-            margin-bottom: 24px;
-            border-radius: 4px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeamFlow{% block title %}{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
 
+<script>
+  // Apply theme before paint to avoid flash
+  (function(){
+    var t = localStorage.getItem('tf-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+
 {% if user.is_authenticated %}
 <nav class="navbar">
-    <a href="/projects/">TeamFlow</a>
-    <div class="user-info">
-        <span>🏢 {{ user.organization }}</span>
-        <span>👤 {{ user.username }}</span>
-        <span>{% if user.org_role %}{{ user.org_role.name }}{% else %}{{ user.role }}{% endif %}</span>
-
-        <a href="/team/" style="color:white; font-size:0.85em;">👥 Team</a>
-
-        {% if user.org_role.name == "Owner" or user.role == "OWNER" %}
-            <a href="/settings/" style="color:white; font-size:0.85em;">⚙ Settings</a>
-        {% endif %}
-        <form method="POST" action="/accounts/logout/">
-            {% csrf_token %}
-            <button type="submit">Logout</button>
-        </form>
-    </div>
+  <a href="/projects/" class="navbar-brand">TeamFlow</a>
+  <div class="navbar-right">
+    <span class="nav-tag">🏢 {{ user.organization }}</span>
+    <a href="/member/{{ user.id }}/" class="nav-tag">👤 {{ user.username }}</a>
+    <span class="nav-tag">
+      {% if user.org_role %}{{ user.org_role.name }}{% else %}{{ user.role }}{% endif %}
+    </span>
+    {% if user.org_role.name == "Owner" or user.role == "OWNER" or user.org_role.is_manager_type %}
+      <a href="/team/" class="nav-tag">👥 Team</a>
+    {% endif %}
+    {% if user.org_role.name == "Owner" or user.role == "OWNER" %}
+      <a href="/settings/" class="nav-tag">⚙ Settings</a>
+    {% endif %}
+    <button class="btn-dark-toggle" onclick="toggleDark()" id="dark-btn" title="Toggle dark mode">🌙</button>
+    <form method="POST" action="/accounts/logout/" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="btn-logout">Logout</button>
+    </form>
+  </div>
 </nav>
 {% endif %}
 
-<div class="content">
-    {% block content %}
-    {% endblock %}
+<div class="page-content">
+  {% block content %}{% endblock %}
 </div>
+
+<script src="{% static 'core/js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
 
 </body>
 </html>

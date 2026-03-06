@@ -1,119 +1,337 @@
 {% extends "base.html" %}
+{% block title %} — {{ project.name }}{% endblock %}
 
 {% block content %}
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+<div class="page-header">
+  <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
     <h1>{{ project.name }}</h1>
-    <a href="/projects/">← Back to Projects</a>
+    {% if project.is_completed %}
+      <span class="badge badge-success">Completed</span>
+    {% else %}
+      <span class="badge badge-accent">Active</span>
+    {% endif %}
+  </div>
+  <a href="/projects/" class="back-link">← Back to Projects</a>
 </div>
 
 {% if project.description %}
-    <p style="color:#555; margin-bottom:24px;">{{ project.description }}</p>
+  <p style="margin-bottom:12px;">{{ project.description }}</p>
 {% endif %}
 
-<div style="display:flex; gap:24px; align-items:flex-start; margin-top:24px;">
-
-    {% for column_name, column_tasks in columns %}
-    <div style="min-width:200px; background:#f4f4f4; padding:12px; border-radius:6px;">
-        <h3>{{ column_name }}</h3>
-        {% for task in column_tasks %}
-            <div style="background:white; padding:10px; margin-bottom:8px; border-radius:4px; border:1px solid #ddd;">
-                <strong>{{ task.title }}</strong>
-                <div style="font-size:0.85em; color:#666;">{{ task.priority }}</div>
-                {% if task.assigned_to %}
-                    <div style="font-size:0.85em; color:#888; margin-top:2px;">
-                        👤 {{ task.assigned_to.username }}
-                    </div>
-                {% endif %}
-                <form method="POST" action="/tasks/{{ task.id }}/update-status/" style="margin-top:6px;">
-                    {% csrf_token %}
-                    <select name="status" onchange="this.form.submit()">
-                        <option value="todo" {% if task.status == "todo" %}selected{% endif %}>Todo</option>
-                        <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>In Progress</option>
-                        <option value="blocked" {% if task.status == "blocked" %}selected{% endif %}>Blocked</option>
-                        <option value="done" {% if task.status == "done" %}selected{% endif %}>Done</option>
-                    </select>
-                </form>
-            </div>
-        {% empty %}
-            <p style="color:#aaa; font-size:0.9em;">No tasks</p>
-        {% endfor %}
-    </div>
+<div style="display:flex; gap:24px; flex-wrap:wrap; margin-bottom:20px; font-size:0.88rem; color:var(--text-secondary);">
+  <span>
+    Manager:
+    {% if project.manager %}
+      <a href="/member/{{ project.manager.id }}/" style="font-weight:600; color:var(--text-primary);">{{ project.manager.username }}</a>
+    {% else %}
+      <span style="color:var(--warning);">Not assigned</span>
+    {% endif %}
+  </span>
+  <span>
+    Members:
+    {% for member in project_members %}
+      <a href="/member/{{ member.id }}/" style="color:var(--text-secondary); margin-right:6px;">{{ member.username }}</a>
+    {% empty %}
+      <span style="color:var(--text-muted);">None</span>
     {% endfor %}
-
+  </span>
 </div>
 
-<hr style="margin-top:32px;">
-<h2>Add Task</h2>
-
-<form method="POST">
-    {% csrf_token %}
-    <p>
-        Title:<br>
-        <input type="text" name="title" required>
-    </p>
-    <p>
-        Description:<br>
-        <textarea name="description"></textarea>
-    </p>
-    <p>
-        Status:<br>
-        <select name="status">
-            <option value="todo">Todo</option>
-            <option value="in_progress">In Progress</option>
-            <option value="blocked">Blocked</option>
-            <option value="done">Done</option>
-        </select>
-    </p>
-    <p>
-        Priority:<br>
-        <select name="priority">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-        </select>
-    </p>
-    <p>
-        Assign to:<br>
-        <select name="assigned_to">
-            <option value="">Unassigned</option>
-            {% for member in members %}
-                <option value="{{ member.id }}">{{ member.username }}</option>
-            {% endfor %}
-        </select>
-    </p>
-    <button type="submit">Create Task</button>
-</form>
-
-<hr style="margin-top:32px;">
-<h2>Activity Log</h2>
-
-{% if activity_logs %}
-    <ul style="list-style:none; padding:0;">
-        {% for log in activity_logs %}
-            <li style="padding:8px 0; border-bottom:1px solid #eee; font-size:0.9em;">
-                <strong>{{ log.user }}</strong> {{ log.action }}
-                <span style="color:#aaa; float:right;">
-                    <time class="local-time" datetime="{{ log.timestamp|date:'c' }}">
-                        {{ log.timestamp|date:"M d, Y H:i" }} UTC
-                    </time>
-                </span>
-            </li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p style="color:#aaa;">No activity yet.</p>
+<!-- SOP Documents -->
+{% if sop_documents %}
+<div class="sop-box">
+  <div style="font-weight:700; margin-bottom:12px; color:var(--text-primary);">📄 SOP Documents</div>
+  <table class="tf-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Uploaded by</th>
+        {% if is_owner %}<th></th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in sop_documents %}
+      <tr>
+        <td style="max-width:260px; overflow-wrap:break-word;">
+          {% if doc.sop_file %}
+            <a href="{{ doc.sop_file.url }}" target="_blank">{{ doc.name }}</a>
+          {% elif doc.sop_link %}
+            <a href="{{ doc.sop_link }}" target="_blank" style="word-break:break-word;">{{ doc.name }}</a>
+          {% else %}
+            {{ doc.name }}
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge {% if doc.sop_file %}badge-muted{% else %}badge-accent{% endif %}">
+            {% if doc.sop_file %}File{% else %}Link{% endif %}
+          </span>
+        </td>
+        <td>
+          {% if doc.uploaded_by %}
+            <a href="/member/{{ doc.uploaded_by.id }}/" style="color:var(--text-secondary);">
+              {{ doc.uploaded_by.username }}
+            </a>
+          {% endif %}
+        </td>
+        {% if is_owner %}
+        <td>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <form method="POST" style="display:inline-flex; align-items:center; gap:6px;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="rename_sop">
+              <input type="hidden" name="doc_id" value="{{ doc.id }}">
+              <input type="text" name="new_name" value="{{ doc.name }}"
+                     class="form-input" style="width:130px; padding:4px 8px; font-size:0.80rem;">
+              <button type="submit" class="btn btn-ghost btn-sm">Rename</button>
+            </form>
+            <form method="POST" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_sop">
+              <input type="hidden" name="doc_id" value="{{ doc.id }}">
+              <button type="submit" class="btn btn-link-danger btn-sm">Delete</button>
+            </form>
+          </div>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 
-<script>
-    document.querySelectorAll('.local-time').forEach(function(el) {
-        const utc = new Date(el.getAttribute('datetime'));
-        el.textContent = utc.toLocaleString(undefined, {
-            year: 'numeric', month: 'short', day: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        });
-    });
-</script>
+<!-- Upload SOP -->
+{% if can_manage_sop %}
+<details style="margin-bottom:28px;">
+  <summary>
+    <div style="display:inline-flex; align-items:center; gap:8px; color:var(--accent);
+                font-size:0.88rem; font-weight:600; padding:8px 0; cursor:pointer;">
+      <span class="summary-arrow">▶</span> Upload SOP Documents
+    </div>
+  </summary>
+  <div class="card" style="margin-top:10px;">
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="upload_sop">
 
+      <div style="margin-bottom:16px;">
+        <div class="form-label">Links</div>
+        <p class="form-hint" style="margin-bottom:8px;">
+          Provide a label — the label is what appears in the document list.
+        </p>
+        <div id="link-entries">
+          <div class="link-entry" style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+            <input type="text" name="sop_link_name[]" placeholder="Label (e.g. Q3 SOP)"
+                   class="form-input" style="flex:1;">
+            <input type="url" name="sop_link[]" placeholder="https://..."
+                   class="form-input" style="flex:2;">
+            <button type="button" onclick="this.parentElement.remove()"
+                    class="btn btn-link-danger" style="font-size:1.1rem; padding:0 6px;">✕</button>
+          </div>
+        </div>
+        <button type="button" onclick="addLink()" class="btn btn-ghost btn-sm" style="margin-top:4px;">
+          + Add Link
+        </button>
+      </div>
+
+      <div>
+        <div class="form-label">Files</div>
+        <p class="upload-hint">PDF, DOCX, DOC, XLSX, XLS, XLSM &nbsp;·&nbsp; Max 10MB per file</p>
+        <p class="form-hint" style="margin-bottom:8px;">
+          If no label is entered, the original filename is used.
+        </p>
+        <div id="file-entries">
+          <div class="file-entry" style="display:flex; gap:8px; margin-bottom:8px; align-items:center; flex-wrap:wrap;">
+            <input type="text" name="sop_file_name[]" placeholder="Label (optional)"
+                   class="form-input" style="flex:1; min-width:120px;">
+            <input type="file" name="sop_file[]"
+                   accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm"
+                   style="flex:2; color:var(--text-secondary);" onchange="previewSOPFile(this)">
+            <button type="button" onclick="this.closest('.file-entry').remove()"
+                    class="btn btn-link-danger" style="font-size:1.1rem; padding:0 6px;">✕</button>
+            <div class="sop-file-preview" style="width:100%;"></div>
+            <p class="sop-size-error" style="width:100%;">File exceeds 10MB limit.</p>
+          </div>
+        </div>
+        <button type="button" onclick="addFile()" class="btn btn-ghost btn-sm" style="margin-top:4px;">
+          + Add File
+        </button>
+      </div>
+
+      <div style="margin-top:18px;">
+        <button type="submit" id="sop-save-btn" class="btn btn-primary">Save Documents</button>
+      </div>
+    </form>
+    {% if not is_owner %}
+      <p class="form-hint" style="margin-top:10px;">Only the owner can rename or delete documents.</p>
+    {% endif %}
+  </div>
+</details>
+{% endif %}
+
+<!-- Kanban Board -->
+<div class="kanban-board">
+  {% for column_name, column_tasks in columns %}
+  <div class="kanban-col">
+    <div class="kanban-col-title">{{ column_name }}</div>
+    {% for task in column_tasks %}
+    <div class="task-card">
+      <div class="task-card-title">{{ task.title }}</div>
+      <div class="task-card-meta">
+        <span class="badge badge-muted">{{ task.get_priority_display }}</span>
+        {% if task.assigned_to %}
+          <span style="margin-left:6px;">
+            <a href="/member/{{ task.assigned_to.id }}/"
+               style="color:var(--text-muted); font-size:0.78rem;">
+              👤 {{ task.assigned_to.username }}
+            </a>
+          </span>
+        {% endif %}
+      </div>
+      {% if not project.is_completed or is_owner %}
+      <form method="POST" action="/tasks/{{ task.id }}/update-status/">
+        {% csrf_token %}
+        <select name="status" onchange="this.form.submit()" class="task-card select">
+          <option value="todo"        {% if task.status == "todo" %}selected{% endif %}>Todo</option>
+          <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>In Progress</option>
+          <option value="blocked"     {% if task.status == "blocked" %}selected{% endif %}>Blocked</option>
+          <option value="done"        {% if task.status == "done" %}selected{% endif %}>Done</option>
+        </select>
+      </form>
+      {% else %}
+        <div class="task-card-status">{{ task.get_status_display }}</div>
+      {% endif %}
+    </div>
+    {% empty %}
+      <p style="color:var(--text-muted); font-size:0.83rem;">No tasks</p>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Add Task -->
+{% if can_create_task %}
+<hr style="margin:32px 0; border:none; border-top:1px solid var(--border);">
+<h2 style="margin-bottom:16px;">Add Task</h2>
+<form method="POST" style="max-width:480px;">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="create_task">
+  <div class="form-group">
+    <label class="form-label">Title <span class="required">*</span></label>
+    <input type="text" name="title" required class="form-input">
+  </div>
+  <div class="form-group">
+    <label class="form-label">Description</label>
+    <textarea name="description" class="form-textarea"></textarea>
+  </div>
+  <div style="display:flex; gap:16px; flex-wrap:wrap;">
+    <div class="form-group" style="flex:1;">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select">
+        <option value="todo">Todo</option>
+        <option value="in_progress">In Progress</option>
+        <option value="blocked">Blocked</option>
+        <option value="done">Done</option>
+      </select>
+    </div>
+    <div class="form-group" style="flex:1;">
+      <label class="form-label">Priority</label>
+      <select name="priority" class="form-select">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+        <option value="urgent">Urgent</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Assign to</label>
+    <select name="assigned_to" class="form-select">
+      <option value="">Unassigned</option>
+      {% for member in members %}
+        <option value="{{ member.id }}">{{ member.username }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary">Create Task</button>
+</form>
+{% endif %}
+
+<!-- Activity Log -->
+<hr style="margin:32px 0; border:none; border-top:1px solid var(--border);">
+<h2 style="margin-bottom:16px;">Activity Log</h2>
+{% if activity_logs %}
+  <div class="activity-log">
+    {% for log in activity_logs %}
+    <div class="activity-item">
+      <div>
+        <a href="/member/{{ log.user.id }}/" style="font-weight:600; color:var(--text-primary);">
+          {{ log.user }}
+        </a>
+        <span style="color:var(--text-secondary);"> {{ log.action }}</span>
+      </div>
+      <time class="local-time activity-time" datetime="{{ log.timestamp|date:'c' }}">
+        {{ log.timestamp|date:"M d, Y H:i" }}
+      </time>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p style="color:var(--text-muted);">No activity yet.</p>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addLink() {
+  var div = document.createElement('div');
+  div.className = 'link-entry';
+  div.style.cssText = 'display:flex; gap:8px; margin-bottom:8px; align-items:center;';
+  div.innerHTML = '<input type="text" name="sop_link_name[]" placeholder="Label (e.g. Q3 SOP)" class="form-input" style="flex:1;">'
+    + '<input type="url" name="sop_link[]" placeholder="https://..." class="form-input" style="flex:2;">'
+    + '<button type="button" onclick="this.parentElement.remove()" class="btn btn-link-danger" style="font-size:1.1rem; padding:0 6px;">✕</button>';
+  document.getElementById('link-entries').appendChild(div);
+}
+
+function addFile() {
+  var div = document.createElement('div');
+  div.className = 'file-entry';
+  div.style.cssText = 'display:flex; gap:8px; margin-bottom:8px; align-items:center; flex-wrap:wrap;';
+  div.innerHTML = '<input type="text" name="sop_file_name[]" placeholder="Label (optional)" class="form-input" style="flex:1; min-width:120px;">'
+    + '<input type="file" name="sop_file[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" style="flex:2; color:var(--text-secondary);" onchange="previewSOPFile(this)">'
+    + '<button type="button" onclick="this.closest(\'.file-entry\').remove()" class="btn btn-link-danger" style="font-size:1.1rem; padding:0 6px;">✕</button>'
+    + '<div class="sop-file-preview" style="width:100%;"></div>'
+    + '<p class="sop-size-error" style="width:100%;">File exceeds 10MB limit.</p>';
+  document.getElementById('file-entries').appendChild(div);
+}
+
+function previewSOPFile(input) {
+  var maxSize = 10 * 1024 * 1024;
+  var entry = input.closest('.file-entry');
+  var preview = entry.querySelector('.sop-file-preview');
+  var error = entry.querySelector('.sop-size-error');
+  var saveBtn = document.getElementById('sop-save-btn');
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > maxSize) {
+    error.style.display = 'block';
+    preview.style.display = 'none';
+    if (saveBtn) saveBtn.disabled = true;
+    return;
+  }
+  error.style.display = 'none';
+  if (saveBtn) saveBtn.disabled = false;
+  var ext = file.name.split('.').pop().toUpperCase();
+  var icons = { PDF:'📄', DOCX:'📝', DOC:'📝', XLSX:'📊', XLS:'📊', XLSM:'📊' };
+  var icon = icons[ext] || '📎';
+  var size = file.size > 1048576
+    ? (file.size / 1048576).toFixed(2) + ' MB'
+    : (file.size / 1024).toFixed(1) + ' KB';
+  preview.innerHTML = icon + ' <strong>' + file.name + '</strong> &nbsp;·&nbsp; ' + ext + ' &nbsp;·&nbsp; ' + size;
+  preview.style.display = 'block';
+}
+</script>
 {% endblock %}

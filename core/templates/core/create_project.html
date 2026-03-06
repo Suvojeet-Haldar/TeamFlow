@@ -14,6 +14,15 @@
         Description:<br>
         <textarea name="description" rows="4"></textarea>
     </p>
+    <p>
+        Project Manager: <span style="color:#aaa; font-size:0.85em;">(optional — can be assigned later)</span><br>
+        <select name="manager_id">
+            <option value="">— No manager assigned —</option>
+            {% for mgr in org_managers %}
+                <option value="{{ mgr.id }}">{{ mgr.username }} ({{ mgr.org_role.name }})</option>
+            {% endfor %}
+        </select>
+    </p>
     <button type="submit">Create Project</button>
     <a href="/projects/" style="margin-left:12px;">Cancel</a>
 </form>

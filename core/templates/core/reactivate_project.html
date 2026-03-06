@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %} — Reactivate Project{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Reactivate Project</h1>
+  <a href="/projects/" class="back-link">← Back to Projects</a>
+</div>
+
+<div class="card" style="max-width:480px;">
+  <p style="margin-bottom:20px;">
+    Are you sure you want to reactivate <strong>{{ project.name }}</strong>?
+    It will move back to the Active section and task editing will be re-enabled.
+  </p>
+  <form method="POST">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">↺ Reactivate</button>
+    <a href="/projects/" style="margin-left:14px; color:var(--text-muted); font-size:0.88rem;">Cancel</a>
+  </form>
+</div>
+{% endblock %}
