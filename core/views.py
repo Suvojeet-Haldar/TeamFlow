@@ -11,7 +11,9 @@ from .models import (
 )
 from django.contrib.auth import login, authenticate
 from django.contrib import messages
-
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth import logout as auth_logout
 
 def get_role_name(user):
     if user.org_role:
@@ -597,6 +599,12 @@ def invite_member(request):
                 f"/invite/accept/{invite.token}/"
             )
 
+    # Owner can choose expiry days (default 7 days)
+    expiry_days = int(request.POST.get('invite_expiry_days', 7))
+    invite = Invite.objects.create(
+        expires_at=timezone.now() + timedelta(days=expiry_days)
+    )
+
     return render(request, "core/invite_member.html", {
         "invite_link": invite_link,
         "error": error,
@@ -622,6 +630,9 @@ def suggest_usernames(request):
 
 def accept_invite(request, token):
     invite = get_object_or_404(Invite, token=token, accepted=False)
+    if invite.is_expired:
+        return render(request, 'core/invite_expired.html', {'invite': invite})
+
     error = None
 
     if request.method == "POST":
@@ -1118,7 +1129,164 @@ def remove_member(request, user_id):
 
     return render(request, "core/confirm_remove.html", {"member": member})
 
+# ── Landing page ───────────────────────────────────────────────────────────────
 def landing(request):
     if request.user.is_authenticated:
-        return redirect("project_list")
-    return render(request, "core/landing.html")
+        return redirect('project_list')
+    return render(request, 'core/landing.html')
+
+# ── CSRF failure — graceful redirect ──────────────────────────────────────────
+def csrf_failure(request, reason=""):
+    from django.shortcuts import redirect
+    return redirect('/login/?csrf_error=1')
+
+# ── Org Tree ───────────────────────────────────────────────────────────────────
+@login_required
+def org_tree(request):
+    user = request.user
+    org = user.organization
+
+    def build_node(u):
+        return {
+            'user': u,
+            'reports': [build_node(r) for r in
+                        CustomUser.objects.filter(manager=u, organization=org)
+                        .order_by('username')]
+        }
+
+    if has_role(user, 'Owner'):
+        # Full tree from top
+        root = get_org_owner(org)
+        tree = [build_node(root)]
+    elif is_manager_type(user):
+        # Their chain: upward path + their subtree
+        chain_up = []
+        cursor = user.manager
+        while cursor:
+            chain_up.insert(0, cursor)
+            cursor = cursor.manager if cursor.manager else None
+        tree = {
+            'chain_up': chain_up,
+            'self': user,
+            'reports': [build_node(r) for r in
+                        CustomUser.objects.filter(manager=user, organization=org)
+                        .order_by('username')]
+        }
+    else:
+        # Employee: just sees their chain
+        chain_up = []
+        cursor = user.manager
+        while cursor:
+            chain_up.insert(0, cursor)
+            cursor = cursor.manager if cursor.manager else None
+        tree = {
+            'chain_up': chain_up,
+            'self': user,
+            'reports': []
+        }
+
+    return render(request, 'core/org_tree.html', {
+        'tree': tree,
+        'is_owner': has_role(user, 'Owner'),
+        'is_manager': is_manager_type(user),
+    })
+
+# ── Register — 2-step with username suggestions for owner ─────────────────────
+def register_view(request):
+    error = None
+    if request.method == 'POST':
+        step = request.POST.get('step', '1')
+        first_name = request.POST.get('first_name', '').strip()
+        middle_name = request.POST.get('middle_name', '').strip()
+        last_name  = request.POST.get('last_name', '').strip()
+        org_name   = request.POST.get('org_name', '').strip()
+
+        if step == '1':
+            if not first_name or not last_name or not org_name:
+                error = 'Organization name, first name, and last name are required.'
+                return render(request, 'core/register.html',
+                              {'error': error, 'step': '1'})
+            suggestions = generate_username_suggestions(first_name, middle_name, last_name, None)
+            return render(request, 'core/register.html', {
+                'step': '2',
+                'first_name': first_name,
+                'middle_name': middle_name,
+                'last_name': last_name,
+                'org_name': org_name,
+                'suggestions': suggestions,
+            })
+
+        elif step == '2':
+            username         = request.POST.get('username', '').strip()
+            email            = request.POST.get('email', '').strip()
+            password         = request.POST.get('password')
+            confirm_password = request.POST.get('confirm_password')
+            dob              = request.POST.get('dob') or None
+            phone            = request.POST.get('phone', '')
+            profile_photo    = request.FILES.get('profile_photo')
+            cropped_data     = request.POST.get('cropped_photo', '').strip()
+
+            if not username:
+                error = 'Please choose a username.'
+            elif CustomUser.objects.filter(username=username).exists():
+                error = 'Username already taken.'
+            elif password != confirm_password:
+                error = 'Passwords do not match.'
+            elif Organization.objects.filter(name__iexact=org_name).exists():
+                error = f'An organization named "{org_name}" already exists.'
+            else:
+                org = Organization.objects.create(name=org_name)
+                # Create default roles
+                Role.objects.bulk_create([
+                    Role(name='Owner',     organization=org, is_default=True, is_manager_type=False),
+                    Role(name='Manager',   organization=org, is_default=True, is_manager_type=True),
+                    Role(name='Developer', organization=org, is_default=True, is_manager_type=False),
+                    Role(name='Viewer',    organization=org, is_default=True, is_manager_type=False),
+                ])
+                owner_role = Role.objects.get(organization=org, name='Owner')
+                emp_id = org.next_employee_id()
+                user = CustomUser.objects.create_user(
+                    username=username,
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    password=password,
+                    organization=org,
+                    role='OWNER',
+                    org_role=owner_role,
+                    dob=dob,
+                    phone=phone,
+                    employee_id=emp_id,
+                    joined_date=timezone.now().date(),
+                )
+                # Handle photo
+                if cropped_data and cropped_data.startswith('data:image'):
+                    import base64, uuid as _uuid
+                    from django.core.files.base import ContentFile
+                    fmt, imgstr = cropped_data.split(';base64,')
+                    ext = fmt.split('/')[-1]
+                    user.profile_photo = ContentFile(
+                        base64.b64decode(imgstr),
+                        name=f'profile_{_uuid.uuid4().hex}.{ext}'
+                    )
+                    user.save()
+                elif profile_photo:
+                    user.profile_photo = profile_photo
+                    user.save()
+
+                login(request, user)
+                return redirect('project_list')
+
+            suggestions = generate_username_suggestions(first_name, middle_name, last_name, None)
+            return render(request, 'core/register.html', {
+                'step': '2', 'error': error,
+                'first_name': first_name, 'middle_name': middle_name,
+                'last_name': last_name, 'org_name': org_name,
+                'suggestions': suggestions,
+            })
+
+    return render(request, 'core/register.html', {'step': '1'})
+
+def custom_logout(request):
+    auth_logout(request)
+    return redirect('/')

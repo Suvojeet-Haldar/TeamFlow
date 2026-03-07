@@ -11,7 +11,6 @@
 <body>
 
 <script>
-  // Apply theme before paint to avoid flash
   (function(){
     var t = localStorage.getItem('tf-theme') || 'light';
     document.documentElement.setAttribute('data-theme', t);
@@ -22,18 +21,28 @@
 <nav class="navbar">
   <a href="/projects/" class="navbar-brand">TeamFlow</a>
   <div class="navbar-right">
-    <span class="nav-tag">🏢 {{ user.organization }}</span>
-    <a href="/member/{{ user.id }}/" class="nav-tag">👤 {{ user.username }}</a>
-    <span class="nav-tag">
-      {% if user.org_role %}{{ user.org_role.name }}{% else %}{{ user.role }}{% endif %}
-    </span>
+
+    <!-- Org + Role combined pill — links to org tree -->
+    <a href="/org-tree/" class="nav-tag" title="View org chart">
+      {{ user.organization }}:
+      <strong>{% if user.org_role %}{{ user.org_role.name|upper }}{% else %}{{ user.role }}{% endif %}</strong>
+    </a>
+
+    <!-- Username — links to profile -->
+    <a href="/member/{{ user.id }}/" class="nav-tag">{{ user.username }}</a>
+
     {% if user.org_role.name == "Owner" or user.role == "OWNER" or user.org_role.is_manager_type %}
-      <a href="/team/" class="nav-tag">👥 Team</a>
+      <a href="/team/" class="nav-tag">Team</a>
     {% endif %}
     {% if user.org_role.name == "Owner" or user.role == "OWNER" %}
-      <a href="/settings/" class="nav-tag">⚙ Settings</a>
+      <a href="/settings/" class="nav-tag">Settings</a>
     {% endif %}
-    <button class="btn-dark-toggle" onclick="toggleDark()" id="dark-btn" title="Toggle dark mode">🌙</button>
+
+    <!-- Dark mode toggle — text only, no emoji that may render badly -->
+    <button class="btn-dark-toggle" onclick="toggleDark()" id="dark-btn" title="Toggle dark/light mode">
+      Dark
+    </button>
+
     <form method="POST" action="/accounts/logout/" style="margin:0;">
       {% csrf_token %}
       <button type="submit" class="btn-logout">Logout</button>
@@ -48,6 +57,23 @@
 
 <script src="{% static 'core/js/main.js' %}"></script>
 {% block extra_js %}{% endblock %}
+
+<script>
+// Re-init dark btn label on load (in case JS file runs before DOM is ready)
+(function(){
+  var t = localStorage.getItem('tf-theme') || 'light';
+  var btn = document.getElementById('dark-btn');
+  if (btn) btn.textContent = t === 'dark' ? 'Light' : 'Dark';
+})();
+function toggleDark() {
+  var current = document.documentElement.getAttribute('data-theme');
+  var next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('tf-theme', next);
+  var btn = document.getElementById('dark-btn');
+  if (btn) btn.textContent = next === 'dark' ? 'Light' : 'Dark';
+}
+</script>
 
 </body>
 </html>
