@@ -14,6 +14,8 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import logout as auth_logout
+from django.db import models
+from django.db.models import Q
 
 def get_role_name(user):
     if user.org_role:
@@ -411,9 +413,8 @@ def create_project(request):
         return redirect("project_list")
 
     org_managers = CustomUser.objects.filter(
-        organization=request.user.organization,
-        org_role__is_manager_type=True
-    )
+        organization=request.user.organization
+    ).filter(Q(org_role__is_manager_type=True) | Q(role="OWNER"))
 
     if request.method == "POST":
         name = request.POST.get("name")
@@ -423,9 +424,9 @@ def create_project(request):
         manager = None
         if manager_id:
             manager = CustomUser.objects.filter(
+                Q(org_role__is_manager_type=True) | Q(role="OWNER"),
                 id=manager_id,
                 organization=request.user.organization,
-                org_role__is_manager_type=True
             ).first()
 
         project = Project.objects.create(
@@ -458,17 +459,16 @@ def assign_project_manager(request, project_id):
         organization=request.user.organization
     )
     org_managers = CustomUser.objects.filter(
-        organization=request.user.organization,
-        org_role__is_manager_type=True
-    )
+        organization=request.user.organization
+    ).filter(Q(org_role__is_manager_type=True) | Q(role="OWNER"))
 
     if request.method == "POST":
         manager_id = request.POST.get("manager_id")
         if manager_id:
             manager = CustomUser.objects.filter(
+                Q(org_role__is_manager_type=True) | Q(role="OWNER"),
                 id=manager_id,
                 organization=request.user.organization,
-                org_role__is_manager_type=True
             ).first()
             project.manager = manager
             if manager:
@@ -542,6 +542,8 @@ def register(request):
     return render(request, "core/register.html", {"error": error})
 
 
+# REPLACE the entire invite_member function in core/views.py
+
 @login_required
 def invite_member(request):
     if not has_role(request.user, "Owner"):
@@ -593,17 +595,12 @@ def invite_member(request):
                 email=email,
                 role=selected_role.name,
                 assigned_manager=manager,
-                contract_expiry=contract_expiry
+                contract_expiry=contract_expiry,
+                expires_at=timezone.now() + timedelta(days=7),
             )
             invite_link = request.build_absolute_uri(
                 f"/invite/accept/{invite.token}/"
             )
-
-    # Owner can choose expiry days (default 7 days)
-    expiry_days = int(request.POST.get('invite_expiry_days', 7))
-    invite = Invite.objects.create(
-        expires_at=timezone.now() + timedelta(days=expiry_days)
-    )
 
     return render(request, "core/invite_member.html", {
         "invite_link": invite_link,
@@ -1071,6 +1068,12 @@ def edit_profile(request):
         elif profile_photo:
             user.profile_photo = profile_photo
 
+        if 'profile_photo' in request.FILES:
+            photo = request.FILES['profile_photo']
+            if photo.size > 5 * 1024 * 1024:
+                error = "Profile photo must be under 5MB."
+                # don't save
+
         user.save()
         return redirect("member_card", user_id=user.id)
 
@@ -1141,54 +1144,82 @@ def csrf_failure(request, reason=""):
     return redirect('/login/?csrf_error=1')
 
 # ── Org Tree ───────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+#  REPLACE the existing org_tree view in core/views.py with this.
+#  Also add this import at the top if not already present:
+#  from django.db import models
+from django.db.models import Q
+# ══════════════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════
+#  REPLACE the org_tree view in core/views.py with this.
+# ══════════════════════════════════════════════════════════
+
 @login_required
 def org_tree(request):
     user = request.user
-    org = user.organization
+    org  = user.organization
 
-    def build_node(u):
+    # Get the org owner (always at top of every chain)
+    owner = CustomUser.objects.filter(organization=org).filter(
+        models.Q(role='OWNER') | models.Q(org_role__name__iexact='Owner')
+    ).first()
+
+    def build_node(u, depth=0):
+        if depth > 12:
+            return {'user': u, 'reports': []}
+        # Direct reports: anyone whose manager = u
+        direct = list(
+            CustomUser.objects.filter(manager=u, organization=org)
+            .order_by('username')
+        )
+        # For the owner node: also pull in anyone with no manager
+        # (they implicitly report to the owner)
+        if u == owner:
+            no_manager = list(
+                CustomUser.objects.filter(
+                    organization=org, manager__isnull=True
+                ).exclude(id=owner.id).order_by('username')
+            )
+            # Merge, deduplicate
+            seen = {r.id for r in direct}
+            for nm in no_manager:
+                if nm.id not in seen:
+                    direct.append(nm)
+            direct.sort(key=lambda x: x.username)
+
         return {
             'user': u,
-            'reports': [build_node(r) for r in
-                        CustomUser.objects.filter(manager=u, organization=org)
-                        .order_by('username')]
+            'reports': [build_node(r, depth + 1) for r in direct]
         }
 
-    if has_role(user, 'Owner'):
-        # Full tree from top
-        root = get_org_owner(org)
-        tree = [build_node(root)]
-    elif is_manager_type(user):
-        # Their chain: upward path + their subtree
-        chain_up = []
-        cursor = user.manager
-        while cursor:
-            chain_up.insert(0, cursor)
-            cursor = cursor.manager if cursor.manager else None
-        tree = {
-            'chain_up': chain_up,
-            'self': user,
-            'reports': [build_node(r) for r in
-                        CustomUser.objects.filter(manager=user, organization=org)
-                        .order_by('username')]
-        }
+    def get_chain_up(u):
+        """Walk manager chain upward. Always append owner at top if not already there."""
+        chain, cursor, visited = [], u.manager, set()
+        while cursor and cursor.id not in visited:
+            visited.add(cursor.id)
+            chain.insert(0, cursor)
+            cursor = cursor.manager
+        # If owner not in chain, prepend them
+        if owner and (not chain or chain[0].id != owner.id) and u.id != owner.id:
+            chain.insert(0, owner)
+        return chain
+
+    is_owner   = has_role(user, 'Owner')
+    is_manager = is_manager_type(user)
+
+    if is_owner:
+        tree_nodes = [build_node(owner)]
+        chain_up   = []
     else:
-        # Employee: just sees their chain
-        chain_up = []
-        cursor = user.manager
-        while cursor:
-            chain_up.insert(0, cursor)
-            cursor = cursor.manager if cursor.manager else None
-        tree = {
-            'chain_up': chain_up,
-            'self': user,
-            'reports': []
-        }
+        tree_nodes = [build_node(user)]
+        chain_up   = get_chain_up(user)
 
     return render(request, 'core/org_tree.html', {
-        'tree': tree,
-        'is_owner': has_role(user, 'Owner'),
-        'is_manager': is_manager_type(user),
+        'tree_nodes': tree_nodes,
+        'chain_up':   chain_up,
+        'is_owner':   is_owner,
+        'is_manager': is_manager,
     })
 
 # ── Register — 2-step with username suggestions for owner ─────────────────────
