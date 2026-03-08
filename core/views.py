@@ -280,9 +280,7 @@ def project_detail(request, project_id):
         project=project
     ).order_by("-timestamp")[:20]
 
-    assignable_members = project.members.exclude(
-        org_role__name="Owner"
-    ).exclude(role="OWNER")
+    assignable_members = project.members.all()
 
     project_members = project.members.select_related('org_role')
     sop_documents = project.sop_documents.all().order_by('created_at')
