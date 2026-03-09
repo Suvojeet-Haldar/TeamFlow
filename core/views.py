@@ -15,7 +15,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import logout as auth_logout
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Case, When, IntegerField
 
 def get_role_name(user):
     if user.org_role:
@@ -291,10 +291,10 @@ def project_detail(request, project_id):
         "can_manage_sop": can_manage_sop,
         "is_owner": is_owner,
         "columns": [
-            ("Todo", Task.objects.filter(project=project, status="todo")),
-            ("In Progress", Task.objects.filter(project=project, status="in_progress")),
-            ("Blocked", Task.objects.filter(project=project, status="blocked")),
-            ("Done", Task.objects.filter(project=project, status="done")),
+            ("Todo",        Task.objects.filter(project=project, status="todo").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder')),
+            ("In Progress", Task.objects.filter(project=project, status="in_progress").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder')),
+            ("Blocked",     Task.objects.filter(project=project, status="blocked").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder')),
+            ("Done",        Task.objects.filter(project=project, status="done").order_by('-id')),
         ],
         "activity_logs": activity_logs,
         "members": assignable_members,
