@@ -1316,6 +1316,19 @@ def register_view(request):
 
     return render(request, 'core/register.html', {'step': '1'})
 
+@login_required
+def task_detail(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    user = request.user
+
+    if not user_can_access_project(user, task.project):
+        return redirect("project_list")
+
+    return render(request, "core/task_detail.html", {
+        "task": task,
+        "project": task.project,
+    })
+
 def custom_logout(request):
     auth_logout(request)
     return redirect('/')

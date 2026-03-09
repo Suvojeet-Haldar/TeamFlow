@@ -15,6 +15,7 @@ urlpatterns = [
     path("projects/<int:project_id>/reactivate/", views.reactivate_project, name="reactivate_project"),
     path("projects/<int:project_id>/assign-manager/", views.assign_project_manager, name="assign_project_manager"),
     path("tasks/<int:task_id>/update-status/", views.update_task_status, name="update_task_status"),
+    path("tasks/<int:task_id>/", views.task_detail, name="task_detail"),
     path("settings/", views.org_settings, name="org_settings"),
     path("team/", views.team, name="team"),
     path("team/<int:user_id>/assign-manager/", views.assign_manager, name="assign_manager"),
