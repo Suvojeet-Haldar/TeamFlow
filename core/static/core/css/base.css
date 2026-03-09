@@ -583,3 +583,14 @@ input:-webkit-autofill:focus {
 @media (max-width: 560px) {
   .kanban-board { grid-template-columns: 1fr; }
 }
+
+/* ── Task priority badges ── */
+.priority-urgent { background: #450a0a; color: #f87171; font-weight: 700; }
+.priority-high   { background: #431407; color: #fb923c; font-weight: 700; }
+.priority-medium { background: #422006; color: #fbbf24; font-weight: 700; }
+.priority-low    { background: #052e16; color: #34d399; font-weight: 700; }
+
+[data-theme="light"] .priority-urgent { background: #fef2f2; color: #dc2626; }
+[data-theme="light"] .priority-high   { background: #fff7ed; color: #ea580c; }
+[data-theme="light"] .priority-medium { background: #fefce8; color: #ca8a04; }
+[data-theme="light"] .priority-low    { background: #f0fdf4; color: #16a34a; }
