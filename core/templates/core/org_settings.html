@@ -10,13 +10,16 @@
 {% endif %}
 
 <h2>Roles</h2>
-<table style="width:100%; border-collapse:collapse; margin-bottom:24px;">
+<!-- Replace lines 13-19 in core/templates/core/org_settings.html with this -->
+<!-- The inline style="background:#f4f4f4;" is what's breaking dark mode -->
+
+<table class="tf-table" style="width:100%; border-collapse:collapse; margin-bottom:24px;">
     <thead>
-        <tr style="background:#f4f4f4;">
-            <th style="text-align:left; padding:8px;">Role Name</th>
-            <th style="text-align:left; padding:8px;">Type</th>
-            <th style="text-align:left; padding:8px;">Manager-capable</th>
-            <th style="padding:8px;"></th>
+        <tr class="tf-table-header">
+            <th style="text-align:left; padding:10px 12px;">Role Name</th>
+            <th style="text-align:left; padding:10px 12px;">Type</th>
+            <th style="text-align:left; padding:10px 12px;">Manager-capable</th>
+            <th style="padding:10px 12px;"></th>
         </tr>
     </thead>
     <tbody>

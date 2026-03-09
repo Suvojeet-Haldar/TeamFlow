@@ -195,5 +195,14 @@ class Invite(models.Model):
     accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def is_expired(self):
+        if not self.expires_at:
+            return False
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
     def __str__(self):
         return f"{self.email} → {self.organization.name}"

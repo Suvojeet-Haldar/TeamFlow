@@ -1,26 +1,61 @@
 {% extends "base.html" %}
-
 {% block content %}
 
-<h1>Assign Project Manager</h1>
-<p style="margin-bottom:24px;">Project: <strong>{{ project.name }}</strong></p>
+<div style="max-width:520px; margin:0 auto; padding:32px 0;">
 
-<form method="POST">
-    {% csrf_token %}
-    <p>
-        Select Manager:<br>
-        <select name="manager_id">
-            <option value="">— Remove manager —</option>
-            {% for mgr in org_managers %}
-                <option value="{{ mgr.id }}"
-                    {% if project.manager and project.manager.id == mgr.id %}selected{% endif %}>
-                    {{ mgr.username }} ({{ mgr.org_role.name }})
-                </option>
-            {% endfor %}
-        </select>
+  <div style="margin-bottom:28px;">
+    <a href="/projects/" style="font-size:0.85rem; color:var(--text-muted); text-decoration:none; display:inline-flex; align-items:center; gap:6px; margin-bottom:16px; transition:color 0.15s;"
+      onmouseover="this.style.color='var(--text-primary)';" onmouseout="this.style.color='var(--text-muted)';">
+      ← Back to Projects
+    </a>
+    <h1 style="font-size:1.6rem; font-weight:700; color:var(--text-primary); letter-spacing:-0.02em; margin:0 0 6px;">Assign Project Manager</h1>
+    <p style="color:var(--text-muted); font-size:0.92rem; margin:0;">
+      Project: <strong style="color:var(--accent);">{{ project.name }}</strong>
     </p>
-    <button type="submit">Save</button>
-    <a href="/projects/" style="margin-left:12px;">Cancel</a>
-</form>
+  </div>
+
+  <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:28px;">
+    <form method="POST" autocomplete="off">
+      {% csrf_token %}
+
+      <div style="margin-bottom:24px;">
+        <label style="display:block; font-size:0.83rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px; letter-spacing:0.02em; text-transform:uppercase;">
+          Manager
+        </label>
+        <select name="manager_id"
+          style="width:100%; padding:10px 14px; background:var(--bg-surface-2); color:var(--text-primary); border:1px solid var(--border); border-radius:9px; font-size:0.95rem; font-family:inherit; outline:none; cursor:pointer; box-sizing:border-box;"
+          onfocus="this.style.borderColor='var(--accent)';"
+          onblur="this.style.borderColor='var(--border)';">
+          <option value="" style="background:var(--bg-surface);">Select manager</option>
+          {% for mgr in org_managers %}
+            <option value="{{ mgr.id }}" style="background:var(--bg-surface);"
+              {% if project.manager and project.manager.id == mgr.id %}selected{% endif %}>
+              {{ mgr.username }} ({{ mgr.org_role.name }})
+            </option>
+          {% endfor %}
+        </select>
+        {% if project.manager %}
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-top:6px;">
+          Currently assigned: <strong style="color:var(--text-secondary);">{{ project.manager.username }}</strong> — selecting "— Select manager —" will remove the assignment.
+        </p>
+        {% endif %}
+      </div>
+
+      <div style="display:flex; gap:12px;">
+        <button type="submit" class="btn btn-primary"
+          style="padding:10px 24px; font-size:0.95rem; font-weight:600; border-radius:9px; border:none; cursor:pointer; background:var(--accent); color:#fff; transition:background 0.15s;"
+          onmouseover="this.style.background='var(--accent-hover)';" onmouseout="this.style.background='var(--accent)';">
+          Save
+        </button>
+        <a href="/projects/" class="btn btn-ghost"
+          style="padding:10px 20px; font-size:0.95rem; font-weight:500; border-radius:9px; color:var(--text-secondary); text-decoration:none; border:1px solid var(--border); transition:background 0.15s;"
+          onmouseover="this.style.background='var(--bg-surface-2)';" onmouseout="this.style.background='transparent';">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+</div>
 
 {% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="access-denied">
+  <div class="access-denied-icon">⏱</div>
+  <h1 style="color:var(--warning);">Invite Link Expired</h1>
+  <p>This invite link has expired. Please contact your organization owner to send a new one.</p>
+  <a href="/login/" class="btn btn-primary">Go to Login</a>
+</div>
+{% endblock %}

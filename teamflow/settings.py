@@ -119,16 +119,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "core" / "static"]   # only once
 
 AUTH_USER_MODEL = 'core.CustomUser'
-
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/projects/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGOUT_REDIRECT_URL = '/'          # land on homepage after logout
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-STATICFILES_DIRS = [BASE_DIR / "core" / "static"]
-
-STATIC_ROOT = BASE_DIR / "staticfiles"   # add this line
-STATICFILES_DIRS = [BASE_DIR / "core" / "static"]  # you already added this
+CSRF_FAILURE_VIEW = 'core.views.csrf_failure'

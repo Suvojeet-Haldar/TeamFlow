@@ -1,30 +1,69 @@
 {% extends "base.html" %}
-
 {% block content %}
 
-<h1>Create New Project</h1>
+<div style="max-width:600px; margin:0 auto; padding:32px 0;">
 
-<form method="POST" style="margin-top:24px;">
-    {% csrf_token %}
-    <p>
-        Name:<br>
-        <input type="text" name="name" required>
-    </p>
-    <p>
-        Description:<br>
-        <textarea name="description" rows="4"></textarea>
-    </p>
-    <p>
-        Project Manager: <span style="color:#aaa; font-size:0.85em;">(optional — can be assigned later)</span><br>
-        <select name="manager_id">
-            <option value="">— No manager assigned —</option>
-            {% for mgr in org_managers %}
-                <option value="{{ mgr.id }}">{{ mgr.username }} ({{ mgr.org_role.name }})</option>
-            {% endfor %}
+  <div style="margin-bottom:28px;">
+    <h1 style="font-size:1.75rem; font-weight:700; color:var(--text-primary); letter-spacing:-0.02em; margin:0 0 4px;">Create New Project</h1>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin:0;">Add a new project to <strong style="color:var(--text-secondary);">{{ request.user.organization }}</strong></p>
+  </div>
+
+  <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:32px;">
+    <form method="POST" autocomplete="off">
+      {% csrf_token %}
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:0.83rem; font-weight:600; color:var(--text-secondary); margin-bottom:7px; letter-spacing:0.02em; text-transform:uppercase;">
+          Project Name <span style="color:#f87171;">*</span>
+        </label>
+        <input type="text" name="name" required autofocus
+          style="width:100%; padding:10px 14px; background:var(--bg-surface-2); color:var(--text-primary); border:1px solid var(--border); border-radius:9px; font-size:0.95rem; font-family:inherit; outline:none; transition:border-color 0.15s, box-shadow 0.15s; box-sizing:border-box;"
+          placeholder="e.g. Apollo Launch"
+          onfocus="this.style.borderColor='var(--accent)'; this.style.boxShadow='0 0 0 3px rgba(79,110,247,0.15)';"
+          onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:0.83rem; font-weight:600; color:var(--text-secondary); margin-bottom:7px; letter-spacing:0.02em; text-transform:uppercase;">
+          Description
+          <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-muted); font-size:0.82rem;">(optional)</span>
+        </label>
+        <textarea name="description" rows="4"
+          style="width:100%; padding:10px 14px; background:var(--bg-surface-2); color:var(--text-primary); border:1px solid var(--border); border-radius:9px; font-size:0.95rem; font-family:inherit; outline:none; resize:vertical; transition:border-color 0.15s, box-shadow 0.15s; box-sizing:border-box;"
+          placeholder="What is this project about?"
+          onfocus="this.style.borderColor='var(--accent)'; this.style.boxShadow='0 0 0 3px rgba(79,110,247,0.15)';"
+          onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';"></textarea>
+      </div>
+
+      <div style="margin-bottom:28px;">
+        <label style="display:block; font-size:0.83rem; font-weight:600; color:var(--text-secondary); margin-bottom:7px; letter-spacing:0.02em; text-transform:uppercase;">
+          Project Manager
+          <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-muted); font-size:0.82rem;">(optional — can be assigned later)</span>
+        </label>
+        <select name="manager_id"
+          style="width:100%; padding:10px 14px; background:var(--bg-surface-2); color:var(--text-primary); border:1px solid var(--border); border-radius:9px; font-size:0.95rem; font-family:inherit; outline:none; cursor:pointer; box-sizing:border-box;"
+          onfocus="this.style.borderColor='var(--accent)';"
+          onblur="this.style.borderColor='var(--border)';">
+          <option value="" style="background:var(--bg-surface);">SELECT</option>
+          {% for mgr in org_managers %}
+            <option value="{{ mgr.id }}" style="background:var(--bg-surface);">{{ mgr.username }} ({{ mgr.org_role.name }})</option>
+          {% endfor %}
         </select>
-    </p>
-    <button type="submit">Create Project</button>
-    <a href="/projects/" style="margin-left:12px;">Cancel</a>
-</form>
+      </div>
+
+      <div style="display:flex; gap:12px; align-items:center;">
+        <button type="submit" class="btn btn-primary" style="padding:10px 24px; font-size:0.95rem; font-weight:600; border-radius:9px; border:none; cursor:pointer; background:var(--accent); color:#fff; transition:background 0.15s;"
+          onmouseover="this.style.background='var(--accent-hover)';" onmouseout="this.style.background='var(--accent)';">
+          Create Project
+        </button>
+        <a href="/projects/" class="btn btn-ghost" style="padding:10px 20px; font-size:0.95rem; font-weight:500; border-radius:9px; color:var(--text-secondary); text-decoration:none; border:1px solid var(--border); transition:background 0.15s, color 0.15s;"
+          onmouseover="this.style.background='var(--bg-surface-2)';" onmouseout="this.style.background='transparent';">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+</div>
 
 {% endblock %}

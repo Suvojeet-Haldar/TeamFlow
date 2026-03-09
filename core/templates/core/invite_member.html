@@ -1,71 +1,123 @@
 {% extends "base.html" %}
-
 {% block content %}
 
-<h1>Invite a Team Member</h1>
-<p style="margin-bottom:24px;">Organization: <strong>{{ request.user.organization }}</strong></p>
+<div style="max-width:580px; margin:0 auto; padding:32px 0;">
 
-{% if error %}
-    <p style="color:red; margin-bottom:16px;">{{ error }}</p>
-{% endif %}
+  <div style="margin-bottom:28px;">
+    <h1 style="font-size:1.75rem; font-weight:700; color:var(--text-primary); letter-spacing:-0.02em; margin:0 0 4px;">Invite Team Member</h1>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin:0;">
+      Inviting to <strong style="color:var(--text-secondary);">{{ request.user.organization }}</strong>
+    </p>
+  </div>
 
-{% if invite_link %}
-    <div style="background:#f0f8e8; padding:16px; border-radius:6px; margin-bottom:24px;">
-        <p><strong>Invite link generated. Share this with your team member:</strong></p>
-        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-            <code id="invite-link" style="word-break:break-all; flex:1; background:#fff; padding:8px; border-radius:4px; border:1px solid #ddd;">{{ invite_link }}</code>
-            <button onclick="copyLink()" style="white-space:nowrap; padding:8px 12px;">Copy Link</button>
-        </div>
-        <p id="copy-confirm" style="color:green; display:none; margin-top:6px; font-size:0.85em;">Copied!</p>
+  {% if error %}
+  <div style="background:rgba(239,68,68,0.10); border:1px solid rgba(239,68,68,0.25); border-radius:10px; padding:12px 16px; margin-bottom:20px; color:#fca5a5; font-size:0.88rem;">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  {% if invite_link %}
+  <div style="background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.22); border-radius:12px; padding:20px; margin-bottom:28px;">
+    <p style="font-size:0.92rem; font-weight:600; color:#6ee7b7; margin:0 0 10px;">Invite link ready — share this with your team member:</p>
+    <div style="display:flex; gap:10px; align-items:stretch;">
+      <code id="invite-link"
+        style="flex:1; background:var(--bg-surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:0.83rem; color:var(--text-secondary); word-break:break-all; display:block;">{{ invite_link }}</code>
+      <button onclick="copyLink()"
+        style="padding:10px 16px; background:var(--accent); color:#fff; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; cursor:pointer; white-space:nowrap; font-family:inherit; transition:background 0.15s;"
+        onmouseover="this.style.background='var(--accent-hover)';" onmouseout="this.style.background='var(--accent)';">
+        Copy Link
+      </button>
     </div>
-    <script>
-    function copyLink() {
-        const link = document.getElementById('invite-link').textContent;
-        navigator.clipboard.writeText(link).then(function() {
-            document.getElementById('copy-confirm').style.display = 'block';
-            setTimeout(function() {
-                document.getElementById('copy-confirm').style.display = 'none';
-            }, 2000);
-        });
-    }
-    </script>
-{% endif %}
+    <p id="copy-confirm" style="color:#6ee7b7; display:none; margin:8px 0 0; font-size:0.84rem;">✓ Copied to clipboard</p>
+  </div>
+  <script>
+  function copyLink() {
+    const link = document.getElementById('invite-link').textContent;
+    navigator.clipboard.writeText(link).then(function() {
+      const el = document.getElementById('copy-confirm');
+      el.style.display = 'block';
+      setTimeout(function() { el.style.display = 'none'; }, 2500);
+    });
+  }
+  </script>
+  {% endif %}
 
-<form method="POST">
-    {% csrf_token %}
-    <p>
-        Email:<br>
-        <input type="email" name="email" required>
-    </p>
-    <p style="margin-top:12px;">
-        Role:<br>
-        <select name="role_id">
-            {% for role in org_roles %}
-                <option value="{{ role.id }}">{{ role.name }}{% if role.is_manager_type %} (manager-type){% endif %}</option>
-            {% endfor %}
-        </select>
-    </p>
-    <p style="margin-top:12px;">
-        Assign Manager: <span style="color:#aaa; font-size:0.85em;">(optional)</span><br>
-        <select name="manager_id">
-            <option value="">— Assign later —</option>
-            {% for mgr in org_managers %}
-                <option value="{{ mgr.id }}">{{ mgr.username }} ({{ mgr.org_role.name }})</option>
-            {% endfor %}
-        </select>
-    </p>
-    <p style="margin-top:12px;">
-        Contract Expiry: <span style="color:#aaa; font-size:0.85em;">(optional — for contractual employees)</span><br>
-        <input type="date" name="contract_expiry">
-        <span style="display:block; font-size:0.8em; color:#888; margin-top:4px;">
-            If set, the invitee will see this before accepting.
-        </span>
-    </p>
-    <div style="margin-top:20px;">
-        <button type="submit">Generate Invite Link</button>
-    </div>
-</form>
+  <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:32px;">
+    <form method="POST" autocomplete="off">
+      {% csrf_token %}
 
-<p style="margin-top:24px;"><a href="/projects/">← Back to Projects</a></p>
+      <!-- Email -->
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:0.83rem; font-weight:600; color:var(--text-secondary); margin-bottom:7px; letter-spacing:0.02em; text-transform:uppercase;">
+          Email <span style="color:#f87171;">*</span>
+        </label>
+        <input type="email" name="email" required
+          style="width:100%; padding:10px 14px; background:var(--bg-surface-2); color:var(--text-primary); border:1px solid var(--border); border-radius:9px; font-size:0.95rem; font-family:inherit; outline:none; transition:border-color 0.15s, box-shadow 0.15s; box-sizing:border-box;"
+          placeholder="colleague@company.com"
+          onfocus="this.style.borderColor='var(--accent)'; this.style.boxShadow='0 0 0 3px rgba(79,110,247,0.15)';"
+          onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+      </div>
+
+      <!-- Role -->
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:0.83rem; font-weight:600; color:var(--text-secondary); margin-bottom:7px; letter-spacing:0.02em; text-transform:uppercase;">
+          Role <span style="color:#f87171;">*</span>
+        </label>
+        <select name="role_id"
+          style="width:100%; padding:10px 14px; background:var(--bg-surface-2); color:var(--text-primary); border:1px solid var(--border); border-radius:9px; font-size:0.95rem; font-family:inherit; outline:none; cursor:pointer; box-sizing:border-box;"
+          onfocus="this.style.borderColor='var(--accent)';" onblur="this.style.borderColor='var(--border)';">
+          {% for role in org_roles %}
+            <option value="{{ role.id }}" style="background:var(--bg-surface);">
+              {{ role.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Assign Manager -->
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:0.83rem; font-weight:600; color:var(--text-secondary); margin-bottom:7px; letter-spacing:0.02em; text-transform:uppercase;">
+          Reporting Manager
+          <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-muted); font-size:0.82rem;">(optional)</span>
+        </label>
+        <select name="manager_id"
+          style="width:100%; padding:10px 14px; background:var(--bg-surface-2); color:var(--text-primary); border:1px solid var(--border); border-radius:9px; font-size:0.95rem; font-family:inherit; outline:none; cursor:pointer; box-sizing:border-box;"
+          onfocus="this.style.borderColor='var(--accent)';" onblur="this.style.borderColor='var(--border)';">
+          <option value="" style="background:var(--bg-surface);">— Assign later —</option>
+          {% for mgr in org_managers %}
+            <option value="{{ mgr.id }}" style="background:var(--bg-surface);">{{ mgr.username }} ({{ mgr.org_role.name }})</option>
+          {% endfor %}
+        </select>
+        <p style="font-size:0.81rem; color:var(--text-muted); margin:6px 0 0;">If not assigned, they will report directly to the organization owner.</p>
+      </div>
+
+      <!-- Contract Expiry -->
+      <div style="margin-bottom:28px;">
+        <label style="display:block; font-size:0.83rem; font-weight:600; color:var(--text-secondary); margin-bottom:7px; letter-spacing:0.02em; text-transform:uppercase;">
+          Contract Expiry
+          <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-muted); font-size:0.82rem;">(optional — contractual employees only)</span>
+        </label>
+        <input type="date" name="contract_expiry"
+          style="width:100%; padding:10px 14px; background:var(--bg-surface-2); color:var(--text-primary); border:1px solid var(--border); border-radius:9px; font-size:0.95rem; font-family:inherit; outline:none; transition:border-color 0.15s; box-sizing:border-box; color-scheme:dark;"
+          onfocus="this.style.borderColor='var(--accent)';" onblur="this.style.borderColor='var(--border)';">
+        <p style="font-size:0.81rem; color:var(--text-muted); margin:6px 0 0;">The invitee will see the expiry date before accepting.</p>
+      </div>
+
+      <div style="display:flex; gap:12px; align-items:center;">
+        <button type="submit"
+          style="padding:10px 24px; font-size:0.95rem; font-weight:600; border-radius:9px; border:none; cursor:pointer; background:var(--accent); color:#fff; font-family:inherit; transition:background 0.15s;"
+          onmouseover="this.style.background='var(--accent-hover)';" onmouseout="this.style.background='var(--accent)';">
+          Generate Invite Link
+        </button>
+        <a href="/projects/"
+          style="padding:10px 20px; font-size:0.95rem; font-weight:500; border-radius:9px; color:var(--text-secondary); text-decoration:none; border:1px solid var(--border); transition:background 0.15s;"
+          onmouseover="this.style.background='var(--bg-surface-2)';" onmouseout="this.style.background='transparent';">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+</div>
 
 {% endblock %}

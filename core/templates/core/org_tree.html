@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %} — Org Chart{% endblock %}
+
+{% block extra_css %}
+<style>
+.org-page { padding: 28px 0; }
+.org-page-title { font-size:1.6rem; font-weight:700; color:var(--text-primary); letter-spacing:-0.02em; margin-bottom:4px; }
+.org-page-sub { font-size:0.88rem; color:var(--text-muted); margin-bottom:32px; }
+
+.tree-scroll { width:100%; padding:8px 0 32px; }
+
+.tree-node-wrap {
+  display:flex; flex-direction:column; align-items:center;
+  position:relative; padding:0 8px; box-sizing:border-box;
+}
+.tree-card {
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  background:var(--bg-surface); border:1.5px solid var(--border);
+  border-radius:12px; padding:12px 10px 10px; width:100px;
+  text-align:center; text-decoration:none; position:relative; z-index:1;
+  transition:border-color 0.15s,box-shadow 0.15s,transform 0.15s;
+  box-sizing:border-box;
+}
+.tree-card:hover { border-color:var(--accent); box-shadow:0 0 0 3px rgba(79,110,247,0.12); transform:translateY(-2px); }
+.tree-card.is-you { border-color:var(--accent); background:rgba(79,110,247,0.07); }
+.tree-card.is-owner { border-color:#f59e0b; background:rgba(245,158,11,0.06); }
+.tree-avatar { width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid var(--border); flex-shrink:0; }
+.tree-avatar-ph {
+  width:38px; height:38px; border-radius:50%; background:var(--bg-surface-3);
+  border:2px solid var(--border); display:flex; align-items:center; justify-content:center;
+  font-size:.95rem; font-weight:700; color:var(--accent); text-transform:uppercase; flex-shrink:0;
+}
+.tree-name { font-size:.78rem; font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:84px; }
+.tree-role { font-size:.67rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:84px; }
+.tree-you-badge { font-size:.64rem; font-weight:700; color:var(--accent); background:rgba(79,110,247,0.15); border-radius:10px; padding:1px 7px; letter-spacing:.04em; }
+
+.conn-down { width:2px; height:22px; background:var(--border); flex-shrink:0; }
+
+.tree-children {
+  display:flex; justify-content:center; align-items:flex-start;
+  flex-wrap:nowrap; position:relative; width:100%;
+}
+.tree-children::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--border);
+}
+.tree-children.solo::before { display:none; }
+
+.tree-children > .tree-node-wrap {
+  padding-top:22px; flex:1 1 auto; max-width:160px;
+}
+.tree-children > .tree-node-wrap::before {
+  content:''; position:absolute; top:0; left:50%;
+  transform:translateX(-50%); width:2px; height:22px; background:var(--border);
+}
+.tree-children > .tree-node-wrap:first-child:not(:only-child)::after {
+  content:''; position:absolute; top:-2px;
+  left:0; right:50%; height:4px;
+  background:var(--bg-base, var(--bg-body, #0b0d18));
+}
+.tree-children > .tree-node-wrap:last-child:not(:only-child)::after {
+  content:''; position:absolute; top:-2px;
+  left:50%; right:0; height:4px;
+  background:var(--bg-base, var(--bg-body, #0b0d18));
+}
+
+.chain-col { display:flex; flex-direction:column; align-items:center; }
+.chain-arr { width:2px; height:20px; background:var(--border); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="org-page">
+  {% if is_owner %}
+    <div class="org-page-title">{{ request.user.organization }} — Org Chart</div>
+    <div class="org-page-sub">Full organization hierarchy.</div>
+  {% else %}
+    <div class="org-page-title">Your Position</div>
+    <div class="org-page-sub">Your place in {{ request.user.organization }}.</div>
+  {% endif %}
+
+  <div class="tree-scroll">
+    {% if is_owner %}
+      {% for root in tree_nodes %}
+        {% include "core/partials/_tree_node.html" with node=root %}
+      {% endfor %}
+    {% else %}
+      <div class="chain-col">
+        {% for ancestor in chain_up %}
+          <a href="/member/{{ ancestor.id }}/" class="tree-card {% if ancestor.role == 'OWNER' %}is-owner{% endif %}">
+            {% if ancestor.profile_photo %}
+              <img src="{{ ancestor.profile_photo.url }}" alt="" class="tree-avatar">
+            {% else %}
+              <div class="tree-avatar-ph">{{ ancestor.username|first }}</div>
+            {% endif %}
+            <div class="tree-name">{{ ancestor.username }}</div>
+            <div class="tree-role">{% if ancestor.org_role %}{{ ancestor.org_role.name }}{% else %}{{ ancestor.role }}{% endif %}</div>
+          </a>
+          <div class="chain-arr"></div>
+        {% endfor %}
+
+        {% for node in tree_nodes %}
+        <div class="tree-node-wrap" style="padding:0;">
+          <a href="/member/{{ node.user.id }}/" class="tree-card is-you">
+            {% if node.user.profile_photo %}
+              <img src="{{ node.user.profile_photo.url }}" alt="" class="tree-avatar">
+            {% else %}
+              <div class="tree-avatar-ph">{{ node.user.username|first }}</div>
+            {% endif %}
+            <div class="tree-name">{{ node.user.username }}</div>
+            <div class="tree-role">{% if node.user.org_role %}{{ node.user.org_role.name }}{% else %}{{ node.user.role }}{% endif %}</div>
+            <div class="tree-you-badge">you</div>
+          </a>
+          {% if node.reports %}
+            <div class="conn-down"></div>
+            <div class="tree-children {% if node.reports|length == 1 %}solo{% endif %}">
+              {% for report in node.reports %}
+                {% include "core/partials/_tree_node.html" with node=report %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
