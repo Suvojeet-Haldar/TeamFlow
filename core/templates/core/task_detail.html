@@ -35,18 +35,33 @@
 {% endif %}
 
 <div class="card" style="margin-bottom:24px;">
-  <div style="font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:10px;">Description</div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <div style="font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Description</div>
+    {% if can_edit_task %}
+      <button onclick="document.getElementById('desc-view').style.display='none'; document.getElementById('desc-edit').style.display='block'; this.style.display='none';" class="btn btn-secondary" style="font-size:0.78rem; padding:4px 10px;">Edit</button>
+    {% endif %}
+  </div>
+
+  <div id="desc-view">
+    {% if task.description %}
+      <p style="white-space:pre-wrap; color:var(--text-primary);">{{ task.description }}</p>
+    {% else %}
+      <p style="color:var(--text-muted);">No description provided.</p>
+    {% endif %}
+  </div>
+
   {% if can_edit_task %}
+  <div id="desc-edit" style="display:none;">
     <form method="post">
       {% csrf_token %}
       <input type="hidden" name="action" value="edit_description">
-      <textarea name="description" class="form-control" rows="6" style="margin-bottom:10px;">{{ task.description }}</textarea>
-      <button type="submit" class="btn btn-primary">Save</button>
+      <textarea name="description" class="form-control" rows="10" style="margin-bottom:10px; width:100%;">{{ task.description }}</textarea>
+      <div style="display:flex; gap:8px;">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" onclick="document.getElementById('desc-edit').style.display='none'; document.getElementById('desc-view').style.display='block'; document.querySelector('[onclick*=desc-view]').style.display='inline-block';" class="btn btn-secondary">Cancel</button>
+      </div>
     </form>
-  {% elif task.description %}
-    <p style="white-space:pre-wrap; color:var(--text-primary);">{{ task.description }}</p>
-  {% else %}
-    <p style="color:var(--text-muted);">No description provided.</p>
+  </div>
   {% endif %}
 </div>
 
