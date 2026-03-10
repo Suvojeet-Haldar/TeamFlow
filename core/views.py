@@ -294,7 +294,7 @@ def project_detail(request, project_id):
             ("Todo",        Task.objects.filter(project=project, status="todo").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder')),
             ("In Progress", Task.objects.filter(project=project, status="in_progress").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder')),
             ("Blocked",     Task.objects.filter(project=project, status="blocked").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder')),
-            ("Done",        Task.objects.filter(project=project, status="done").order_by('-id')),
+            ("Done",        Task.objects.filter(project=project, status="done").order_by('-completed_at', '-id')),
         ],
         "activity_logs": activity_logs,
         "members": assignable_members,
@@ -397,6 +397,10 @@ def update_task_status(request, task_id):
             if can_update:
                 old_status = task.status
                 task.status = new_status
+                if new_status == "done":
+                    task.completed_at = timezone.now()
+                else:
+                    task.completed_at = None
                 task.save()
                 ActivityLog.objects.create(
                     user=user, project=task.project, task=task,
@@ -1348,6 +1352,10 @@ def task_detail(request, task_id):
             if new_status in ["todo", "in_progress", "blocked", "done"]:
                 old_status = task.status
                 task.status = new_status
+                if new_status == "done":
+                    task.completed_at = timezone.now()
+                else:
+                    task.completed_at = None
                 task.save()
                 ActivityLog.objects.create(
                     user=user, project=task.project, task=task,
