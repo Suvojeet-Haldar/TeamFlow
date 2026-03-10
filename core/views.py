@@ -1346,6 +1346,17 @@ def task_detail(request, task_id):
                 action=f"updated description of \"{task.title}\""
             )
             return redirect("task_detail", task_id=task.id)
+        elif action == "edit_title" and can_edit_task:
+            new_title = request.POST.get("title", "").strip()
+            if new_title:
+                old_title = task.title
+                task.title = new_title
+                task.save()
+                ActivityLog.objects.create(
+                    user=user, project=task.project, task=task,
+                    action=f"renamed task \"{old_title}\" to \"{new_title}\""
+                )
+            return redirect("task_detail", task_id=task.id)
 
         elif action == "update_status" and is_assignee:
             new_status = request.POST.get("status")
