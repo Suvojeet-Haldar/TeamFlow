@@ -1324,9 +1324,42 @@ def task_detail(request, task_id):
     if not user_can_access_project(user, task.project):
         return redirect("project_list")
 
+    is_owner = has_role(user, "Owner")
+    is_pm = task.project.manager and task.project.manager == user
+    is_assignee = task.assigned_to == user
+    can_edit_task = is_owner or is_pm
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "edit_description" and can_edit_task:
+            new_description = request.POST.get("description", "").strip()
+            old_description = task.description
+            task.description = new_description
+            task.save()
+            ActivityLog.objects.create(
+                user=user, project=task.project, task=task,
+                action=f"updated description of \"{task.title}\""
+            )
+            return redirect("task_detail", task_id=task.id)
+
+        elif action == "update_status" and is_assignee:
+            new_status = request.POST.get("status")
+            if new_status in ["todo", "in_progress", "blocked", "done"]:
+                old_status = task.status
+                task.status = new_status
+                task.save()
+                ActivityLog.objects.create(
+                    user=user, project=task.project, task=task,
+                    action=f"moved \"{task.title}\" from {old_status} to {new_status}"
+                )
+            return redirect("task_detail", task_id=task.id)
+
     return render(request, "core/task_detail.html", {
         "task": task,
         "project": task.project,
+        "can_edit_task": can_edit_task,
+        "is_assignee": is_assignee,
     })
 
 def custom_logout(request):
