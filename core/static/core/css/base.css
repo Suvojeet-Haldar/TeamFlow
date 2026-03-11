@@ -604,3 +604,15 @@ input:-webkit-autofill:focus {
 [data-theme="light"] .priority-high   { background: #fff7ed; color: #ea580c; }
 [data-theme="light"] .priority-medium { background: #fefce8; color: #ca8a04; }
 [data-theme="light"] .priority-low    { background: #f0fdf4; color: #16a34a; }
+
+.drag-handle {
+  display: inline-block;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: grab;
+  user-select: none;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.drag-handle:active { cursor: grabbing; }

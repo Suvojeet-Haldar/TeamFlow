@@ -160,6 +160,10 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     task_number = models.PositiveIntegerField(null=True, blank=True)
+    position = models.PositiveIntegerField(default=0)
+    moved_to_todo_at = models.DateTimeField(null=True, blank=True)
+    moved_to_inprogress_at = models.DateTimeField(null=True, blank=True)
+    moved_to_blocked_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.title

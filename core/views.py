@@ -16,6 +16,7 @@ from datetime import timedelta
 from django.contrib.auth import logout as auth_logout
 from django.db import models
 from django.db.models import Q, Case, When, IntegerField
+from django.db import models, transaction
 
 def get_role_name(user):
     if user.org_role:
@@ -166,6 +167,9 @@ def project_detail(request, project_id):
                 if candidate and not has_role(candidate, "Owner"):
                     assigned_to = candidate
 
+            new_position = Task.objects.filter(
+                project=project, status=status, priority=priority
+            ).count()
             task = Task.objects.create(
                 project=project,
                 title=title,
@@ -174,6 +178,7 @@ def project_detail(request, project_id):
                 priority=priority,
                 assigned_to=assigned_to,
                 task_number=project.next_task_number(),
+                position=new_position,
             )
             ActivityLog.objects.create(
                 user=user, project=project, task=task,
@@ -286,16 +291,20 @@ def project_detail(request, project_id):
     project_members = project.members.select_related('org_role')
     sop_documents = project.sop_documents.all().order_by('created_at')
 
+    is_pm = project.manager and project.manager == user
+    can_reorder = (has_role(user, "Owner") or bool(is_pm)) and not project.is_completed
+
     context = {
         "project": project,
         "can_create_task": can_create_task,
         "can_manage_sop": can_manage_sop,
         "is_owner": is_owner,
+        "can_reorder": can_reorder,
         "columns": [
-            ("Todo",        Task.objects.filter(project=project, status="todo").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder')),
-            ("In Progress", Task.objects.filter(project=project, status="in_progress").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder')),
-            ("Blocked",     Task.objects.filter(project=project, status="blocked").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder')),
-            ("Done",        Task.objects.filter(project=project, status="done").order_by('-completed_at', '-id')),
+            ("Todo",        "todo",        Task.objects.filter(project=project, status="todo").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
+            ("In Progress", "in_progress", Task.objects.filter(project=project, status="in_progress").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
+            ("Blocked",     "blocked",     Task.objects.filter(project=project, status="blocked").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
+            ("Done",        "done",        Task.objects.filter(project=project, status="done").order_by('-completed_at', '-id')),
         ],
         "activity_logs": activity_logs,
         "members": assignable_members,
@@ -400,8 +409,15 @@ def update_task_status(request, task_id):
                 task.status = new_status
                 if new_status == "done":
                     task.completed_at = timezone.now()
-                else:
+                elif old_status == "done":
                     task.completed_at = None
+                now = timezone.now()
+                if new_status == "todo":
+                    task.moved_to_todo_at = now
+                elif new_status == "in_progress":
+                    task.moved_to_inprogress_at = now
+                elif new_status == "blocked":
+                    task.moved_to_blocked_at = now
                 task.save()
                 ActivityLog.objects.create(
                     user=user, project=task.project, task=task,
@@ -1366,8 +1382,15 @@ def task_detail(request, task_id):
                 task.status = new_status
                 if new_status == "done":
                     task.completed_at = timezone.now()
-                else:
+                elif old_status == "done":
                     task.completed_at = None
+                now = timezone.now()
+                if new_status == "todo":
+                    task.moved_to_todo_at = now
+                elif new_status == "in_progress":
+                    task.moved_to_inprogress_at = now
+                elif new_status == "blocked":
+                    task.moved_to_blocked_at = now
                 task.save()
                 ActivityLog.objects.create(
                     user=user, project=task.project, task=task,
@@ -1381,6 +1404,74 @@ def task_detail(request, task_id):
         "can_edit_task": can_edit_task,
         "is_assignee": is_assignee,
     })
+
+@login_required
+def reorder_task(request, task_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    task = get_object_or_404(Task, id=task_id)
+    user = request.user
+
+    if not user_can_access_project(user, task.project):
+        return JsonResponse({'error': 'Access denied'}, status=403)
+
+    is_owner = has_role(user, 'Owner')
+    is_pm = task.project.manager and task.project.manager == user
+
+    if not (is_owner or is_pm):
+        return JsonResponse({'error': 'Permission denied — owner or PM only'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    ordered_ids = [int(x) for x in data.get('ordered_ids', [])]
+    column = data.get('column')
+    new_priority = data.get('new_priority')
+
+    if column not in ['todo', 'in_progress', 'blocked']:
+        return JsonResponse({'error': 'Invalid column'}, status=400)
+
+    PRIORITY_ORDER = {'urgent': 0, 'high': 1, 'medium': 2, 'low': 3}
+
+    tasks_map = {t.id: t for t in Task.objects.filter(
+        project=task.project, status=column, id__in=ordered_ids
+    )}
+
+    if len(tasks_map) != len(ordered_ids):
+        return JsonResponse({'error': 'Task ID mismatch'}, status=400)
+
+    # Apply new priority in memory for validation
+    if new_priority and new_priority in PRIORITY_ORDER:
+        tasks_map[task.id].priority = new_priority
+
+    # Validate priority order is non-decreasing (urgent first)
+    prev_p = -1
+    for tid in ordered_ids:
+        p = PRIORITY_ORDER.get(tasks_map[tid].priority, 99)
+        if p < prev_p:
+            return JsonResponse({'error': 'Priority order violated'}, status=400)
+        prev_p = p
+
+    with transaction.atomic():
+        for idx, tid in enumerate(ordered_ids):
+            t = tasks_map[tid]
+            t.position = idx
+            update_fields = ['position']
+            if tid == task.id and new_priority and new_priority in PRIORITY_ORDER:
+                t.priority = new_priority
+                update_fields.append('priority')
+            t.save(update_fields=update_fields)
+
+        if new_priority and new_priority in PRIORITY_ORDER:
+            ActivityLog.objects.create(
+                user=user, project=task.project, task=task,
+                action=f'changed priority of "{task.title}" to {new_priority}'
+            )
+
+    return JsonResponse({'ok': True})
 
 def custom_logout(request):
     auth_logout(request)

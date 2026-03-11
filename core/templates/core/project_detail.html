@@ -173,13 +173,18 @@
 
 <!-- Kanban Board -->
 <div class="kanban-board">
-  {% for column_name, column_tasks in columns %}
-  <div class="kanban-col">
-    <div class="kanban-col-title">{{ column_name }}</div>
-    <div class="kanban-col-tasks">
+  {% for column_name, column_status, column_tasks in columns %}
+<div class="kanban-col" id="col-{{ column_status }}" data-column="{{ column_status }}">
+  <div class="kanban-col-title">{{ column_name }}</div>
+  <div class="kanban-col-tasks" id="tasks-{{ column_status }}">
     {% for task in column_tasks %}
-    <div class="task-card">
-      <a href="/tasks/{{ task.id }}/" class="task-card-title" style="color:var(--text-primary); text-decoration:none; display:block;"><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600;">#{{ task.task_number }}</span> {{ task.title }}</a>
+    <div class="task-card" data-task-id="{{ task.id }}" data-priority="{{ task.priority }}" data-column="{{ column_status }}">
+      <div style="display:flex; align-items:flex-start; gap:6px;">
+        {% if can_reorder and column_status != 'done' %}
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        {% endif %}
+        <a href="/tasks/{{ task.id }}/" class="task-card-title" style="color:var(--text-primary); text-decoration:none; display:block; flex:1;"><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600;">#{{ task.task_number }}</span> {{ task.title }}</a>
+      </div>
       <div class="task-card-meta">
         <span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
         {% if task.assigned_to %}
@@ -283,11 +288,27 @@
 {% else %}
   <p style="color:var(--text-muted);">No activity yet.</p>
 {% endif %}
+<!-- Priority change dialog -->
+<div id="priority-dialog" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); padding:28px 32px; max-width:440px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.6); position:relative; z-index:10000;">
+    <p id="priority-dialog-msg" style="color:var(--text-primary); margin-bottom:20px; line-height:1.6;"></p>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button id="priority-dialog-cancel" class="btn btn-ghost">Cancel</button>
+      <button id="priority-dialog-yes" class="btn btn-primary"></button>
+    </div>
+  </div>
+</div>
 
+<!-- Done column toast -->
+<div id="done-toast" style="display:none; position:fixed; bottom:28px; left:50%; transform:translateX(-50%); background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); padding:12px 22px; color:var(--text-secondary); font-size:0.88rem; z-index:9998; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+  Done column order is fixed by completion time and cannot be changed.
+</div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script>
+/* ── Existing SOP JS ── */
 function addLink() {
   var div = document.createElement('div');
   div.className = 'link-entry';
@@ -297,7 +318,6 @@ function addLink() {
     + '<button type="button" onclick="this.parentElement.remove()" class="btn btn-link-danger" style="font-size:1.1rem; padding:0 6px;">✕</button>';
   document.getElementById('link-entries').appendChild(div);
 }
-
 function addFile() {
   var div = document.createElement('div');
   div.className = 'file-entry';
@@ -309,7 +329,6 @@ function addFile() {
     + '<p class="sop-size-error" style="width:100%;">File exceeds 10MB limit.</p>';
   document.getElementById('file-entries').appendChild(div);
 }
-
 function previewSOPFile(input) {
   var maxSize = 10 * 1024 * 1024;
   var entry = input.closest('.file-entry');
@@ -334,6 +353,145 @@ function previewSOPFile(input) {
     : (file.size / 1024).toFixed(1) + ' KB';
   preview.innerHTML = icon + ' <strong>' + file.name + '</strong> &nbsp;·&nbsp; ' + ext + ' &nbsp;·&nbsp; ' + size;
   preview.style.display = 'block';
+}
+
+/* ── SortableJS drag-and-drop ── */
+{% if can_reorder %}
+const PRIORITY_ORDER = {urgent: 0, high: 1, medium: 2, low: 3};
+const PRIORITY_LABEL = {urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low'};
+const SORTABLE_COLS = ['todo', 'in_progress', 'blocked'];
+
+let pendingReorder = null;
+let originalOrder = [];
+
+function getCookie(name) {
+  const v = `; ${document.cookie}`;
+  const p = v.split(`; ${name}=`);
+  if (p.length === 2) return p.pop().split(';').shift();
+}
+
+function showDoneToast() {
+  const t = document.getElementById('done-toast');
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+
+function showPriorityDialog(taskId, requiredPriority, column, orderedIds, container) {
+  const label = PRIORITY_LABEL[requiredPriority];
+  pendingReorder = {taskId, requiredPriority, column, orderedIds, container};
+  document.getElementById('priority-dialog-msg').textContent =
+    `To place this task here, its priority must be changed to ${label}. ` +
+    `This is because tasks must be ordered by priority within a column.`;
+  document.getElementById('priority-dialog-yes').textContent = `Yes, change to ${label}`;
+  document.getElementById('priority-dialog').style.display = 'flex';
+}
+
+function hidePriorityDialog() {
+  document.getElementById('priority-dialog').style.display = 'none';
+}
+
+function revertOrder(container) {
+  originalOrder.forEach(el => container.appendChild(el));
+}
+
+function submitReorder(taskId, column, orderedIds, newPriority) {
+  fetch(`/tasks/${taskId}/reorder/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+    body: JSON.stringify({
+      ordered_ids: orderedIds,
+      column: column,
+      new_priority: newPriority || null,
+    }),
+  })
+  .then(r => r.json())
+  .then(data => { if (!data.ok) location.reload(); })
+  .catch(() => location.reload());
+}
+
+function validateAndSubmit(column, container, movedTaskId) {
+  const items = [...container.querySelectorAll('.task-card[data-task-id]')];
+  const orderedIds = items.map(el => parseInt(el.dataset.taskId));
+  const movedIdx = items.findIndex(el => parseInt(el.dataset.taskId) === movedTaskId);
+  const movedEl = items[movedIdx];
+  const movedPOrder = PRIORITY_ORDER[movedEl.dataset.priority];
+
+  // Check left neighbour
+  if (movedIdx > 0) {
+    const prevPOrder = PRIORITY_ORDER[items[movedIdx - 1].dataset.priority];
+    if (prevPOrder > movedPOrder) {
+      // Moved is more urgent than prev → invalid at this position
+      showPriorityDialog(movedTaskId, items[movedIdx - 1].dataset.priority, column, orderedIds, container);
+      return;
+    }
+  }
+
+  // Check right neighbour
+  if (movedIdx < items.length - 1) {
+    const nextPOrder = PRIORITY_ORDER[items[movedIdx + 1].dataset.priority];
+    if (nextPOrder < movedPOrder) {
+      // Next is more urgent than moved → moved is too low priority for this spot
+      showPriorityDialog(movedTaskId, items[movedIdx + 1].dataset.priority, column, orderedIds, container);
+      return;
+    }
+  }
+
+  // Valid — submit
+  submitReorder(movedTaskId, column, orderedIds, null);
+}
+
+// Init SortableJS on todo, in_progress, blocked
+SORTABLE_COLS.forEach(function(col) {
+  const el = document.getElementById('tasks-' + col);
+  if (!el) return;
+  new Sortable(el, {
+    handle: '.drag-handle',
+    animation: 150,
+    onStart: function(evt) {
+      originalOrder = [...evt.from.querySelectorAll('.task-card[data-task-id]')];
+    },
+    onEnd: function(evt) {
+      const movedTaskId = parseInt(evt.item.dataset.taskId);
+      validateAndSubmit(col, evt.to, movedTaskId);
+    },
+  });
+});
+
+// Priority dialog buttons
+document.getElementById('priority-dialog-yes').addEventListener('click', function() {
+  if (!pendingReorder) return;
+  const {taskId, requiredPriority, column, orderedIds, container} = pendingReorder;
+  // Update DOM data attribute so future reorders are aware
+  const taskEl = container.querySelector(`.task-card[data-task-id="${taskId}"]`);
+  if (taskEl) taskEl.dataset.priority = requiredPriority;
+  submitReorder(taskId, column, orderedIds, requiredPriority);
+  hidePriorityDialog();
+  pendingReorder = null;
+});
+
+document.getElementById('priority-dialog-cancel').addEventListener('click', function() {
+  if (!pendingReorder) return;
+  revertOrder(pendingReorder.container);
+  hidePriorityDialog();
+  pendingReorder = null;
+});
+{% endif %}
+
+// Done column — drag attempt message (shown to everyone)
+document.querySelectorAll('.done-task-card').forEach(function(card) {
+  card.addEventListener('mousedown', function() {
+    card.addEventListener('mousemove', function onMove() {
+      showDoneToast();
+      card.removeEventListener('mousemove', onMove);
+    }, { once: true });
+  });
+});
+function showDoneToast() {
+  const t = document.getElementById('done-toast');
+  if (t) { t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 3000); }
 }
 </script>
 {% endblock %}
