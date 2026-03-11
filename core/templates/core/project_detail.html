@@ -176,6 +176,7 @@
   {% for column_name, column_tasks in columns %}
   <div class="kanban-col">
     <div class="kanban-col-title">{{ column_name }}</div>
+    <div class="kanban-col-tasks">
     {% for task in column_tasks %}
     <div class="task-card">
       <a href="/tasks/{{ task.id }}/" class="task-card-title" style="color:var(--text-primary); text-decoration:none; display:block;"><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600;">#{{ task.task_number }}</span> {{ task.title }}</a>
@@ -207,6 +208,7 @@
     {% empty %}
       <p style="color:var(--text-muted); font-size:0.83rem;">No tasks</p>
     {% endfor %}
+    </div>
   </div>
   {% endfor %}
 </div>
