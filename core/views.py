@@ -164,7 +164,7 @@ def project_detail(request, project_id):
                     id=assigned_to_id,
                     organization=user.organization
                 ).first()
-                if candidate and not has_role(candidate, "Owner"):
+                if candidate:
                     assigned_to = candidate
 
             new_position = Task.objects.filter(
