@@ -96,9 +96,15 @@ class Project(models.Model):
     is_completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    task_number_counter = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.name
+    
+    def next_task_number(self):
+        self.task_number_counter += 1
+        self.save(update_fields=['task_number_counter'])
+        return self.task_number_counter
 
 
 class SOPDocument(models.Model):
@@ -153,6 +159,7 @@ class Task(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    task_number = models.PositiveIntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.title

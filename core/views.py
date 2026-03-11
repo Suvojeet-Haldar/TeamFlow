@@ -173,6 +173,7 @@ def project_detail(request, project_id):
                 status=status,
                 priority=priority,
                 assigned_to=assigned_to,
+                task_number=project.next_task_number(),
             )
             ActivityLog.objects.create(
                 user=user, project=project, task=task,

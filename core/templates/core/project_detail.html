@@ -178,7 +178,7 @@
     <div class="kanban-col-title">{{ column_name }}</div>
     {% for task in column_tasks %}
     <div class="task-card">
-      <a href="/tasks/{{ task.id }}/" class="task-card-title" style="color:var(--text-primary); text-decoration:none; display:block;">{{ task.title }}</a>
+      <a href="/tasks/{{ task.id }}/" class="task-card-title" style="color:var(--text-primary); text-decoration:none; display:block;"><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600;">#{{ task.task_number }}</span> {{ task.title }}</a>
       <div class="task-card-meta">
         <span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
         {% if task.assigned_to %}
