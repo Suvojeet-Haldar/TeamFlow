@@ -17,6 +17,8 @@ from django.contrib.auth import logout as auth_logout
 from django.db import models
 from django.db.models import Q, Case, When, IntegerField
 from django.db import models, transaction
+from .utils import broadcast_board_update
+
 
 def get_role_name(user):
     if user.org_role:
@@ -184,6 +186,17 @@ def project_detail(request, project_id):
                 user=user, project=project, task=task,
                 action=f"created task \"{task.title}\""
             )
+            broadcast_board_update(project.id, {
+                "type": "task_created",
+                "task_id": task.id,
+                "title": task.title,
+                "status": task.status,
+                "priority": task.priority,
+                "task_number": task.task_number,
+                "assigned_to": task.assigned_to.username if task.assigned_to else None,
+                "assigned_to_id": task.assigned_to.id if task.assigned_to else None,
+            })
+
             return redirect("project_detail", project_id=project.id)
 
         elif action == "upload_sop" and can_manage_sop:
@@ -427,6 +440,13 @@ def update_task_status(request, task_id):
                     user=user, project=task.project, task=task,
                     action=f"moved \"{task.title}\" from {old_status} to {new_status}"
                 )
+                broadcast_board_update(task.project.id, {
+                    "type": "status_change",
+                    "task_id": task.id,
+                    "old_status": old_status,
+                    "new_status": new_status,
+                })
+
     return redirect("project_detail", project_id=task.project.id)
 
 
@@ -1475,6 +1495,14 @@ def reorder_task(request, task_id):
                 user=user, project=task.project, task=task,
                 action=f'changed priority of "{task.title}" to {new_priority}'
             )
+
+        broadcast_board_update(task.project.id, {
+            "type": "reorder",
+            "column": column,
+            "ordered_ids": ordered_ids,
+            "task_id": task.id,
+            "new_priority": new_priority,
+        })
 
     return JsonResponse({'ok': True})
 

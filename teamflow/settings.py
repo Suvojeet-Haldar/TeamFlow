@@ -26,20 +26,21 @@ SECRET_KEY = "django-insecure-5o4ra!8elxv-p@*@5nef218$&)rfm(@tq_9=(#$@7p4&b%leic
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     'rest_framework',
+    'channels',
     'core',
 ]
 
@@ -130,3 +131,14 @@ LOGOUT_REDIRECT_URL = '/'          # land on homepage after logout
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
+
+ASGI_APPLICATION = "teamflow.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("172.20.32.192", 6379)],  # replace with your actual WSL2 IP
+        },
+    },
+}

@@ -173,6 +173,98 @@
 
 <!-- Kanban Board -->
 <div class="kanban-board">
+  <script>
+  (function() {
+    const projectId = {{ project.id }};
+    const wsUrl = "ws://" + window.location.host + "/ws/project/" + projectId + "/";
+    let ws;
+
+    function connect() {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = function() {
+        console.log("[WS] Connected to project", projectId);
+      };
+
+      ws.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        handleBoardUpdate(data);
+      };
+
+      ws.onclose = function() {
+        console.log("[WS] Disconnected — reconnecting in 3s");
+        setTimeout(connect, 3000);
+      };
+
+      ws.onerror = function(err) {
+        console.error("[WS] Error:", err);
+        ws.close();
+      };
+    }
+
+    function handleBoardUpdate(data) {
+      if (data.type === "status_change") {
+        handleStatusChange(data);
+      } else if (data.type === "reorder") {
+        handleReorder(data);
+      } else if (data.type === "task_created") {
+        handleTaskCreated(data);
+      }
+    }
+
+    function handleStatusChange(data) {
+      const card = document.querySelector(".task-card[data-task-id='" + data.task_id + "']");
+      if (!card) { location.reload(); return; }
+      const oldCol = document.getElementById("tasks-" + data.old_status);
+      const newCol = document.getElementById("tasks-" + data.new_status);
+      if (!newCol) { location.reload(); return; }
+      // Remove "No tasks" placeholder if present
+      const placeholder = newCol.querySelector("p");
+      if (placeholder) placeholder.remove();
+      newCol.appendChild(card);
+      // Update the status dropdown on the card
+      const select = card.querySelector("select[name='status']");
+      if (select) select.value = data.new_status;
+      // If old col now empty, add placeholder
+      if (oldCol && oldCol.querySelectorAll(".task-card").length === 0) {
+        oldCol.innerHTML = '<p style="color:var(--text-muted); font-size:0.83rem;">No tasks</p>';
+      }
+    }
+
+    function handleReorder(data) {
+      const col = document.getElementById("tasks-" + data.column);
+      if (!col) return;
+      // Re-sort cards in DOM to match ordered_ids
+      const cards = {};
+      col.querySelectorAll(".task-card[data-task-id]").forEach(function(c) {
+        cards[parseInt(c.dataset.taskId)] = c;
+      });
+      data.ordered_ids.forEach(function(id) {
+        if (cards[id]) col.appendChild(cards[id]);
+      });
+      // Update priority badge if changed
+      if (data.new_priority && data.task_id) {
+        const card = document.querySelector(".task-card[data-task-id='" + data.task_id + "']");
+        if (card) {
+          card.dataset.priority = data.new_priority;
+          const badge = card.querySelector(".badge[class*='priority-']");
+          if (badge) {
+            badge.className = badge.className.replace(/priority-\w+/, "priority-" + data.new_priority);
+            const labels = {urgent:"Urgent", high:"High", medium:"Medium", low:"Low"};
+            badge.textContent = labels[data.new_priority] || data.new_priority;
+          }
+        }
+      }
+    }
+
+    function handleTaskCreated(data) {
+      // Reload is simplest for task creation — avoids rebuilding full card HTML
+      location.reload();
+    }
+
+    connect();
+  })();
+  </script>
   {% for column_name, column_status, column_tasks in columns %}
 <div class="kanban-col" id="col-{{ column_status }}" data-column="{{ column_status }}">
   <div class="kanban-col-title">{{ column_name }}</div>
