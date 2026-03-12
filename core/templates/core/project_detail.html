@@ -380,7 +380,7 @@
 <hr style="margin:32px 0; border:none; border-top:1px solid var(--border);">
 <h2 style="margin-bottom:16px;">Activity Log</h2>
 {% if activity_logs %}
-  <div class="activity-log">
+  <div class="activity-log" style="max-height:400px; overflow-y:auto; padding-right:4px;">
     {% for log in activity_logs %}
     <div class="activity-item">
       <div>

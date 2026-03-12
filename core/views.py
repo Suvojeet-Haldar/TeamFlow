@@ -295,9 +295,7 @@ def project_detail(request, project_id):
                 doc.delete()
             return redirect("project_detail", project_id=project.id)
 
-    activity_logs = ActivityLog.objects.filter(
-        project=project
-    ).order_by("-timestamp")[:20]
+    activity_logs = ActivityLog.objects.filter(project=project).order_by("-timestamp")
 
     assignable_members = project.members.all()
 
