@@ -161,6 +161,7 @@ class Task(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     task_number = models.PositiveIntegerField(null=True, blank=True)
     position = models.PositiveIntegerField(default=0)
+    is_archived = models.BooleanField(default=False)
     moved_to_todo_at = models.DateTimeField(null=True, blank=True)
     moved_to_inprogress_at = models.DateTimeField(null=True, blank=True)
     moved_to_blocked_at = models.DateTimeField(null=True, blank=True)

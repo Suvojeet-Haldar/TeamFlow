@@ -266,6 +266,24 @@
 </form>
 {% endif %}
 
+<!-- Archived Tasks -->
+{% if is_owner and archived_tasks %}
+<hr style="margin:32px 0; border:none; border-top:1px solid var(--border);">
+<h2 style="margin-bottom:16px;">Archived Tasks</h2>
+<div style="display:flex; flex-direction:column; gap:8px;">
+  {% for task in archived_tasks %}
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); opacity:0.7;">
+    <span>
+      <span style="color:var(--text-muted); font-size:0.75rem; font-weight:600;">#{{ task.task_number }}</span>
+      <a href="/tasks/{{ task.id }}/" style="color:var(--text-secondary); margin-left:6px;">{{ task.title }}</a>
+      <span class="badge priority-{{ task.priority }}" style="margin-left:8px;">{{ task.get_priority_display }}</span>
+    </span>
+    <span style="color:var(--text-muted); font-size:0.78rem;">{{ task.get_status_display }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 <!-- Activity Log -->
 <hr style="margin:32px 0; border:none; border-top:1px solid var(--border);">
 <h2 style="margin-bottom:16px;">Activity Log</h2>

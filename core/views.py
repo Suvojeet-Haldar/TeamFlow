@@ -301,16 +301,20 @@ def project_detail(request, project_id):
         "is_owner": is_owner,
         "can_reorder": can_reorder,
         "columns": [
-            ("Todo",        "todo",        Task.objects.filter(project=project, status="todo").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
-            ("In Progress", "in_progress", Task.objects.filter(project=project, status="in_progress").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
-            ("Blocked",     "blocked",     Task.objects.filter(project=project, status="blocked").annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
-            ("Done",        "done",        Task.objects.filter(project=project, status="done").order_by('-completed_at', '-id')),
+            ("Todo",        "todo",        Task.objects.filter(project=project, status="todo",        is_archived=False).annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
+            ("In Progress", "in_progress", Task.objects.filter(project=project, status="in_progress", is_archived=False).annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
+            ("Blocked",     "blocked",     Task.objects.filter(project=project, status="blocked",     is_archived=False).annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
+            ("Done",        "done",        Task.objects.filter(project=project, status="done",        is_archived=False).order_by('-completed_at', '-id')),
         ],
         "activity_logs": activity_logs,
         "members": assignable_members,
         "project_members": project_members,
         "sop_documents": sop_documents,
     }
+    archived_tasks = Task.objects.filter(
+        project=project, is_archived=True
+    ).order_by('-updated_at')
+    context['archived_tasks'] = archived_tasks
     return render(request, "core/project_detail.html", context)
 
 
@@ -1403,6 +1407,7 @@ def task_detail(request, task_id):
         "project": task.project,
         "can_edit_task": can_edit_task,
         "is_assignee": is_assignee,
+        "is_owner": is_owner,
     })
 
 @login_required
@@ -1472,6 +1477,26 @@ def reorder_task(request, task_id):
             )
 
     return JsonResponse({'ok': True})
+
+@login_required
+def archive_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    user = request.user
+
+    if not user_can_access_project(user, task.project):
+        return redirect('project_list')
+
+    if not has_role(user, 'Owner'):
+        return redirect('task_detail', task_id=task.id)
+
+    if request.method == 'POST':
+        task.is_archived = True
+        task.save(update_fields=['is_archived'])
+        ActivityLog.objects.create(
+            user=user, project=task.project, task=task,
+            action=f'archived "{task.title}"'
+        )
+    return redirect('project_detail', project_id=task.project.id)
 
 def custom_logout(request):
     auth_logout(request)
