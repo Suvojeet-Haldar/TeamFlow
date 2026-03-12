@@ -137,8 +137,6 @@ ASGI_APPLICATION = "teamflow.asgi.application"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("172.20.32.192", 6379)],  # replace with your actual WSL2 IP
-        },
-    },
+        "CONFIG": {"hosts": [("127.0.0.1", 6379)]},
+    }
 }

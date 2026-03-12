@@ -184,7 +184,7 @@ def project_detail(request, project_id):
             )
             ActivityLog.objects.create(
                 user=user, project=project, task=task,
-                action=f"created task \"{task.title}\""
+                action=f"created task #{task.task_number} \"{task.title}\""
             )
             broadcast_board_update(project.id, {
                 "type": "task_created",
@@ -438,7 +438,7 @@ def update_task_status(request, task_id):
                 task.save()
                 ActivityLog.objects.create(
                     user=user, project=task.project, task=task,
-                    action=f"moved \"{task.title}\" from {old_status} to {new_status}"
+                    action=f"moved #{task.task_number} \"{task.title}\" from {old_status} to {new_status}"
                 )
                 broadcast_board_update(task.project.id, {
                     "type": "status_change",
@@ -1384,7 +1384,7 @@ def task_detail(request, task_id):
             task.save()
             ActivityLog.objects.create(
                 user=user, project=task.project, task=task,
-                action=f"updated description of \"{task.title}\""
+                action=f"updated description of #{task.task_number} \"{task.title}\""
             )
             return redirect("task_detail", task_id=task.id)
         elif action == "edit_title" and can_edit_task:
@@ -1395,7 +1395,7 @@ def task_detail(request, task_id):
                 task.save()
                 ActivityLog.objects.create(
                     user=user, project=task.project, task=task,
-                    action=f"renamed task \"{old_title}\" to \"{new_title}\""
+                    action=f"renamed task #{task.task_number} \"{old_title}\" to \"{new_title}\""
                 )
             return redirect("task_detail", task_id=task.id)
 
@@ -1418,8 +1418,14 @@ def task_detail(request, task_id):
                 task.save()
                 ActivityLog.objects.create(
                     user=user, project=task.project, task=task,
-                    action=f"moved \"{task.title}\" from {old_status} to {new_status}"
+                    action=f"moved #{task.task_number} \"{task.title}\" from {old_status} to {new_status}"
                 )
+                broadcast_board_update(task.project.id, {
+                    "type": "status_change",
+                    "task_id": task.id,
+                    "old_status": old_status,
+                    "new_status": new_status,
+                })
             return redirect("task_detail", task_id=task.id)
 
     return render(request, "core/task_detail.html", {
@@ -1493,7 +1499,7 @@ def reorder_task(request, task_id):
         if new_priority and new_priority in PRIORITY_ORDER:
             ActivityLog.objects.create(
                 user=user, project=task.project, task=task,
-                action=f'changed priority of "{task.title}" to {new_priority}'
+                action=f'changed priority of #{task.task_number} "{task.title}" to {new_priority}'
             )
 
         broadcast_board_update(task.project.id, {
@@ -1522,7 +1528,7 @@ def archive_task(request, task_id):
         task.save(update_fields=['is_archived'])
         ActivityLog.objects.create(
             user=user, project=task.project, task=task,
-            action=f'archived "{task.title}"'
+            action=f'archived #{task.task_number} "{task.title}"'
         )
     return redirect('project_detail', project_id=task.project.id)
 

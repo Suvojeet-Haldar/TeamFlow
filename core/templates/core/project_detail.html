@@ -289,17 +289,17 @@
         {% endif %}
       </div>
       {% if not project.is_completed or is_owner %}
-      <form method="POST" action="/tasks/{{ task.id }}/update-status/">
-        {% csrf_token %}
-        <select name="status" onchange="this.form.submit()" class="task-card select">
-          <option value="todo"        {% if task.status == "todo" %}selected{% endif %}>Todo</option>
-          <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>In Progress</option>
-          <option value="blocked"     {% if task.status == "blocked" %}selected{% endif %}>Blocked</option>
-          <option value="done"        {% if task.status == "done" %}selected{% endif %}>Done</option>
-        </select>
-      </form>
-      {% else %}
-        <div class="task-card-status">{{ task.get_status_display }}</div>
+        {% if task.assigned_to == request.user or is_owner or project.manager == request.user %}
+        <form method="POST" action="/tasks/{{ task.id }}/update-status/">
+          {% csrf_token %}
+          <select name="status" onchange="this.form.submit()" class="task-card select">
+            <option value="todo"        {% if task.status == "todo" %}selected{% endif %}>Todo</option>
+            <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>In Progress</option>
+            <option value="blocked"     {% if task.status == "blocked" %}selected{% endif %}>Blocked</option>
+            <option value="done"        {% if task.status == "done" %}selected{% endif %}>Done</option>
+          </select>
+        </form>
+        {% endif %}
       {% endif %}
     </div>
     {% empty %}
