@@ -267,7 +267,7 @@
   </script>
   {% for column_name, column_status, column_tasks in columns %}
 <div class="kanban-col" id="col-{{ column_status }}" data-column="{{ column_status }}">
-  <div class="kanban-col-title">{{ column_name }}</div>
+  <div class="kanban-col-title">{{ column_name }} <span style="color:var(--text-muted); font-size:0.78rem; font-weight:500;">({{ column_tasks|length }})</span></div>
   <div class="kanban-col-tasks" id="tasks-{{ column_status }}">
     {% for task in column_tasks %}
     <div class="task-card" data-task-id="{{ task.id }}" data-priority="{{ task.priority }}" data-column="{{ column_status }}">
