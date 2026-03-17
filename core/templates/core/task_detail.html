@@ -35,8 +35,8 @@
   {% if is_owner and not task.is_archived %}
   <form method="POST" action="/tasks/{{ task.id }}/archive/" style="margin-left:auto;">
     {% csrf_token %}
-    <button type="submit" class="btn btn-link-danger" style="font-size:0.78rem; padding:4px 10px;"
-      onclick="return confirm('Archive this task? It will be hidden from the board but logs will be preserved.')">
+    <button type="button" class="btn btn-link-danger" style="font-size:0.78rem; padding:4px 10px;"
+      onclick="document.getElementById('archive-dialog').style.display='flex'">
       Archive
     </button>
   </form>
@@ -92,6 +92,20 @@
     </form>
   </div>
   {% endif %}
+</div>
+
+<!-- Archive confirmation dialog -->
+<div id="archive-dialog" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px 32px; max-width:440px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+    <p style="color:var(--text-primary); margin-bottom:20px; line-height:1.6;">Archive this task? It will be hidden from the board but all logs will be preserved.</p>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="document.getElementById('archive-dialog').style.display='none'">Cancel</button>
+      <form method="POST" action="/tasks/{{ task.id }}/archive/" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Archive</button>
+      </form>
+    </div>
+  </div>
 </div>
 
 {% endblock %}
