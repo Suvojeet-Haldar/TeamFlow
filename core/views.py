@@ -1530,6 +1530,26 @@ def archive_task(request, task_id):
         )
     return redirect('project_detail', project_id=task.project.id)
 
+@login_required
+def unarchive_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    user = request.user
+
+    if not user_can_access_project(user, task.project):
+        return redirect('project_list')
+
+    if not has_role(user, 'Owner'):
+        return redirect('task_detail', task_id=task.id)
+
+    if request.method == 'POST':
+        task.is_archived = False
+        task.save(update_fields=['is_archived'])
+        ActivityLog.objects.create(
+            user=user, project=task.project, task=task,
+            action=f'unarchived #{task.task_number} "{task.title}"'
+        )
+    return redirect('project_detail', project_id=task.project.id)
+
 def custom_logout(request):
     auth_logout(request)
     return redirect('/')

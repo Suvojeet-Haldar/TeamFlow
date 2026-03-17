@@ -19,6 +19,7 @@ urlpatterns = [
     path('tasks/<int:task_id>/update-status/', views.update_task_status, name='update_task_status'),
     path('tasks/<int:task_id>/reorder/', views.reorder_task, name='reorder_task'),
     path('tasks/<int:task_id>/archive/', views.archive_task, name='archive_task'),
+    path('tasks/<int:task_id>/unarchive/', views.unarchive_task, name='unarchive_task'),
     path('tasks/<int:task_id>/', views.task_detail, name='task_detail'),
     path('member/<int:user_id>/', views.member_card, name='member_card'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),

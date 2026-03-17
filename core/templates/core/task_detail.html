@@ -42,7 +42,10 @@
   </form>
   {% endif %}
   {% if task.is_archived %}
-  <span style="margin-left:auto; font-size:0.78rem; color:var(--text-muted); font-style:italic;">Archived</span>
+  <form method="POST" action="/tasks/{{ task.id }}/unarchive/" style="margin-left:auto;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-link" style="font-size:0.78rem; padding:4px 10px;">Unarchive</button>
+  </form>
   {% endif %}
 </div>
 
