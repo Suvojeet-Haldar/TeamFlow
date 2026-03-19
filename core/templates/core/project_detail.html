@@ -574,9 +574,16 @@ SORTABLE_COLS.forEach(function(col) {
 document.getElementById('priority-dialog-yes').addEventListener('click', function() {
   if (!pendingReorder) return;
   const {taskId, requiredPriority, column, orderedIds, container} = pendingReorder;
-  // Update DOM data attribute so future reorders are aware
   const taskEl = container.querySelector(`.task-card[data-task-id="${taskId}"]`);
-  if (taskEl) taskEl.dataset.priority = requiredPriority;
+  if (taskEl) {
+    taskEl.dataset.priority = requiredPriority;
+    const badge = taskEl.querySelector(".badge[class*='priority-']");
+    if (badge) {
+      badge.className = badge.className.replace(/priority-\w+/, "priority-" + requiredPriority);
+      const labels = {urgent:"Urgent", high:"High", medium:"Medium", low:"Low"};
+      badge.textContent = labels[requiredPriority] || requiredPriority;
+    }
+  }
   submitReorder(taskId, column, orderedIds, requiredPriority);
   hidePriorityDialog();
   pendingReorder = null;
