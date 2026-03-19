@@ -169,9 +169,9 @@ def project_detail(request, project_id):
                 if candidate:
                     assigned_to = candidate
 
-            new_position = Task.objects.filter(
-                project=project, status=status, priority=priority
-            ).count()
+            from django.db.models import Max
+            max_pos = Task.objects.filter(project=project, status=status, priority=priority, is_archived=False).aggregate(Max('position'))['position__max']
+            new_position = (max_pos if max_pos is not None else -1) + 1
             task = Task.objects.create(
                 project=project,
                 title=title,
@@ -433,6 +433,9 @@ def update_task_status(request, task_id):
                     task.moved_to_inprogress_at = now
                 elif new_status == "blocked":
                     task.moved_to_blocked_at = now
+                from django.db.models import Max
+                max_pos = Task.objects.filter(project=task.project, status=new_status, priority=task.priority, is_archived=False).exclude(id=task.id).aggregate(Max('position'))['position__max']
+                task.position = (max_pos if max_pos is not None else -1) + 1
                 task.save()
                 ActivityLog.objects.create(
                     user=user, project=task.project, task=task,
@@ -1413,6 +1416,9 @@ def task_detail(request, task_id):
                     task.moved_to_inprogress_at = now
                 elif new_status == "blocked":
                     task.moved_to_blocked_at = now
+                from django.db.models import Max
+                max_pos = Task.objects.filter(project=task.project, status=new_status, priority=task.priority, is_archived=False).exclude(id=task.id).aggregate(Max('position'))['position__max']
+                task.position = (max_pos if max_pos is not None else -1) + 1
                 task.save()
                 ActivityLog.objects.create(
                     user=user, project=task.project, task=task,
