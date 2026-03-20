@@ -97,6 +97,99 @@
   {% endif %}
 </div>
 
+<!-- Submissions -->
+<div class="card" style="margin-bottom:24px;">
+  <div style="font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:14px;">
+    Submissions
+  </div>
+
+  {% if submissions %}
+    <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+      {% for sub in submissions %}
+      <div style="background:var(--bg-surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px;">
+        {% if sub.text %}
+          <p style="white-space:pre-wrap; color:var(--text-primary); margin-bottom:{% if sub.file or sub.link %}8px{% else %}0{% endif %};">{{ sub.text }}</p>
+        {% endif %}
+        {% if sub.file %}
+          <div style="margin-bottom:{% if sub.link %}6px{% else %}0{% endif %};">
+            <a href="{{ sub.file.url }}" target="_blank" style="font-size:0.83rem;">📎 {{ sub.file.name|slice:"12:" }}</a>
+          </div>
+        {% endif %}
+        {% if sub.link %}
+          <div>
+            <a href="{{ sub.link }}" target="_blank" style="font-size:0.83rem;">🔗 {% if sub.link_label %}{{ sub.link_label }}{% else %}{{ sub.link }}{% endif %}</a>
+          </div>
+        {% endif %}
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">
+          {{ sub.submitted_by.username }} · <time class="local-time" datetime="{{ sub.created_at|date:'c' }}">{{ sub.created_at|date:"M d, Y H:i" }}</time>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color:var(--text-muted); margin-bottom:16px;">No submissions yet.</p>
+  {% endif %}
+
+  {% if is_assignee %}
+  <form method="POST" action="/tasks/{{ task.id }}/submit/" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label">Text</label>
+      <textarea name="text" class="form-textarea" rows="4" placeholder="Describe your solution..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">File <span class="form-hint" style="display:inline;">(PNG, JPG, PDF, DOCX, XLSX, CSV — max 10MB)</span></label>
+      <input type="file" name="file" accept=".png,.jpg,.jpeg,.webp,.pdf,.docx,.xlsx,.xlsm,.csv" style="color:var(--text-secondary);">
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <div class="form-group" style="flex:2;">
+        <label class="form-label">Link URL</label>
+        <input type="url" name="link" class="form-input" placeholder="https://...">
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label class="form-label">Link Label</label>
+        <input type="text" name="link_label" class="form-input" placeholder="e.g. Demo video">
+      </div>
+    </div>
+    <p id="submit-error" style="color:var(--danger); font-size:0.83rem; margin-bottom:10px; display:none;"></p>
+    <button type="button" class="btn btn-primary" onclick="validateSubmission(this)">Submit</button>
+  </form>
+  <script>
+  function validateSubmission(btn) {
+    const form = btn.closest('form');
+    const text = form.querySelector('textarea[name="text"]').value.trim();
+    const link = form.querySelector('input[name="link"]').value.trim();
+    const fileInput = form.querySelector('input[name="file"]');
+    const file = fileInput.files[0];
+    const error = document.getElementById('submit-error');
+    const ALLOWED = ['png','jpg','jpeg','webp','pdf','docx','xlsx','xlsm','csv'];
+    const MAX = 10 * 1024 * 1024;
+
+    if (!text && !link && !file) {
+      error.textContent = 'Please provide text, a file, or a link.';
+      error.style.display = 'block';
+      return;
+    }
+    if (file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!ALLOWED.includes(ext)) {
+        error.textContent = `File type .${ext} is not allowed.`;
+        error.style.display = 'block';
+        return;
+      }
+      if (file.size > MAX) {
+        error.textContent = 'File exceeds 10MB limit.';
+        error.style.display = 'block';
+        return;
+      }
+    }
+    error.style.display = 'none';
+    form.submit();
+  }
+  </script>
+  {% endif %}
+</div>
+
 <!-- Archive confirmation dialog -->
 <div id="archive-dialog" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:9999; align-items:center; justify-content:center;">
   <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px 32px; max-width:440px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.6);">

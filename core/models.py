@@ -189,6 +189,26 @@ class ActivityLog(models.Model):
         return f"{self.user} — {self.action}"
 
 
+class Submission(models.Model):
+    task = models.ForeignKey(
+        Task, on_delete=models.CASCADE, related_name='submissions'
+    )
+    submitted_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL,
+        null=True, related_name='submissions'
+    )
+    text = models.TextField(blank=True)
+    file = models.FileField(upload_to='submissions/', null=True, blank=True)
+    link = models.URLField(blank=True)
+    link_label = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Submission by {self.submitted_by} on {self.task}"
+
 class Invite(models.Model):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name='invites'

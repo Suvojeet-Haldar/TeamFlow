@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from .models import (
     Project, Task, ActivityLog, CustomUser,
-    Organization, Invite, Role, SOPDocument
+    Organization, Invite, Role, SOPDocument, Submission
 )
 from django.contrib.auth import login, authenticate
 from django.contrib import messages
@@ -1432,12 +1432,14 @@ def task_detail(request, task_id):
                 })
             return redirect("task_detail", task_id=task.id)
 
+    submissions = task.submissions.all()
     return render(request, "core/task_detail.html", {
         "task": task,
         "project": task.project,
         "can_edit_task": can_edit_task,
         "is_assignee": is_assignee,
         "is_owner": is_owner,
+        "submissions": submissions,
     })
 
 @login_required
@@ -1555,6 +1557,70 @@ def unarchive_task(request, task_id):
             action=f'unarchived #{task.task_number} "{task.title}"'
         )
     return redirect('project_detail', project_id=task.project.id)
+
+@login_required
+def submit_solution(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    user = request.user
+
+    if not user_can_access_project(user, task.project):
+        return redirect('project_list')
+
+    if task.assigned_to != user:
+        return redirect('task_detail', task_id=task.id)
+
+    error = None
+    if request.method == 'POST':
+        text = request.POST.get('text', '').strip()
+        link = request.POST.get('link', '').strip()
+        link_label = request.POST.get('link_label', '').strip()
+        file = request.FILES.get('file')
+
+        ALLOWED_EXTS = {'png', 'jpg', 'jpeg', 'webp', 'pdf', 'docx', 'xlsx', 'xlsm', 'csv'}
+        MAX_SIZE = 10 * 1024 * 1024
+
+        validated_file = None
+        file_error = None
+
+        if file:
+            ext = file.name.rsplit('.', 1)[-1].lower() if '.' in file.name else ''
+            if ext not in ALLOWED_EXTS:
+                file_error = f"File type .{ext} is not allowed."
+            elif file.size > MAX_SIZE:
+                file_error = "File exceeds 10MB limit."
+            else:
+                validated_file = file
+
+        if not text and not link and not validated_file:
+            if file_error:
+                error = file_error
+            else:
+                error = "Please provide text, a file, or a link."
+        else:
+            submission = Submission(task=task, submitted_by=user, text=text, link=link, link_label=link_label)
+            if validated_file:
+                submission.file = validated_file
+            submission.save()
+            ActivityLog.objects.create(
+                user=user, project=task.project, task=task,
+                action=f'submitted a solution for #{task.task_number} "{task.title}"'
+            )
+            return redirect('task_detail', task_id=task.id)
+
+    is_owner = has_role(user, "Owner")
+    is_pm = task.project.manager and task.project.manager == user
+    can_edit_task = is_owner or is_pm
+    is_assignee = task.assigned_to == user
+    submissions = task.submissions.all()
+    return render(request, "core/task_detail.html", {
+        "task": task,
+        "project": task.project,
+        "can_edit_task": can_edit_task,
+        "is_assignee": is_assignee,
+        "is_owner": is_owner,
+        "submissions": submissions,
+        "submission_error": error,
+    })
 
 def custom_logout(request):
     auth_logout(request)
