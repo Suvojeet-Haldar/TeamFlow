@@ -295,7 +295,7 @@ def project_detail(request, project_id):
                 doc.delete()
             return redirect("project_detail", project_id=project.id)
 
-    activity_logs = ActivityLog.objects.filter(project=project).order_by("-timestamp")
+    activity_logs = ActivityLog.objects.filter(project=project, task_only=False).order_by("-timestamp")
 
     assignable_members = project.members.all()
 
@@ -1385,7 +1385,8 @@ def task_detail(request, task_id):
             task.save()
             ActivityLog.objects.create(
                 user=user, project=task.project, task=task,
-                action=f"updated description of #{task.task_number} \"{task.title}\""
+                action=f"updated description of #{task.task_number} \"{task.title}\"",
+                task_only=True
             )
             return redirect("task_detail", task_id=task.id)
         elif action == "edit_title" and can_edit_task:
@@ -1433,6 +1434,7 @@ def task_detail(request, task_id):
             return redirect("task_detail", task_id=task.id)
 
     submissions = task.submissions.all()
+    task_logs = ActivityLog.objects.filter(task=task).order_by("-timestamp")
     return render(request, "core/task_detail.html", {
         "task": task,
         "project": task.project,
@@ -1440,6 +1442,7 @@ def task_detail(request, task_id):
         "is_assignee": is_assignee,
         "is_owner": is_owner,
         "submissions": submissions,
+        "task_logs": task_logs,
     })
 
 @login_required
@@ -1603,7 +1606,8 @@ def submit_solution(request, task_id):
             submission.save()
             ActivityLog.objects.create(
                 user=user, project=task.project, task=task,
-                action=f'submitted a solution for #{task.task_number} "{task.title}"'
+                action=f'submitted a solution for #{task.task_number} "{task.title}"',
+                task_only=True
             )
             return redirect('task_detail', task_id=task.id)
 

@@ -190,6 +190,26 @@
   {% endif %}
 </div>
 
+<!-- Task Activity Log -->
+<div class="card" style="margin-bottom:24px;">
+  <div style="font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:14px;">Activity Log</div>
+  {% if task_logs %}
+    <div class="activity-log" style="max-height:300px; overflow-y:auto; padding-right:4px;">
+      {% for log in task_logs %}
+      <div class="activity-item">
+        <div>
+          <a href="/member/{{ log.user.id }}/" style="font-weight:600; color:var(--text-primary);">{{ log.user }}</a>
+          <span style="color:var(--text-secondary);"> {{ log.action }}</span>
+        </div>
+        <time class="local-time activity-time" datetime="{{ log.timestamp|date:'c' }}">{{ log.timestamp|date:"M d, Y H:i" }}</time>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color:var(--text-muted);">No activity yet.</p>
+  {% endif %}
+</div>
+
 <!-- Archive confirmation dialog -->
 <div id="archive-dialog" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:9999; align-items:center; justify-content:center;">
   <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px 32px; max-width:440px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.6);">

@@ -25,7 +25,7 @@ Teams working across multiple projects struggle with task visibility, accountabi
 - **Project Analytics** — task completion rates, workload distribution, overdue tracking
 - **Activity Logging** — per-task change history split by change type
 - **Task Numbering & Badges** — Kanban column counters and unique task IDs
-- **JWT Authentication** — secure token-based auth
+- **Session-Based Authentication** — secure auth using Django's built-in auth framework
 
 ---
 
@@ -47,12 +47,9 @@ Teams working across multiple projects struggle with task visibility, accountabi
 
 ```
 TeamFlow/
-├── teamflow/          # Project config, URLs, ASGI/WSGI
-├── accounts/          # Auth, user roles, multi-tenancy
-├── projects/          # Project and task management
-├── kanban/            # Real-time board, WebSocket consumers
-├── analytics/         # Project stats and reporting
-└── templates/         # HTML templates
+├── teamflow/          # Project config, ASGI/WSGI, URL routing
+├── core/              # All app logic — models, views, consumers, templates
+└── static/            # CSS, JS assets
 ```
 
 ---
