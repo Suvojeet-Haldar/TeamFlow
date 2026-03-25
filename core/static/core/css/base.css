@@ -420,6 +420,7 @@ p  { color: var(--text-secondary); }
   letter-spacing: 0.06em;
   color: var(--text-secondary);
   margin-bottom: 12px;
+  text-align: center;
 }
 
 /* ── Task Cards ───────────────────────────────────────────── */
