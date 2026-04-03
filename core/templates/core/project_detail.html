@@ -212,20 +212,33 @@
       }
     }
 
+    const _WS_PORDER = {urgent: 0, high: 1, medium: 2, low: 3};
+    function _wsInsertAtPriority(card, colEl) {
+      const cp = _WS_PORDER[card.dataset.priority] ?? 99;
+      const cards = [...colEl.querySelectorAll('.task-card[data-task-id]')].filter(c => c !== card);
+      let insertBefore = null;
+      for (const c of cards) {
+        if ((_WS_PORDER[c.dataset.priority] ?? 99) > cp) { insertBefore = c; break; }
+      }
+      if (insertBefore) colEl.insertBefore(card, insertBefore);
+      else colEl.appendChild(card);
+    }
+
     function handleStatusChange(data) {
       const card = document.querySelector(".task-card[data-task-id='" + data.task_id + "']");
       if (!card) { location.reload(); return; }
       const oldCol = document.getElementById("tasks-" + data.old_status);
       const newCol = document.getElementById("tasks-" + data.new_status);
       if (!newCol) { location.reload(); return; }
-      // Remove "No tasks" placeholder if present
       const placeholder = newCol.querySelector("p");
       if (placeholder) placeholder.remove();
-      newCol.appendChild(card);
-      // Update the status dropdown on the card
+      if (data.new_status === 'done') {
+        newCol.insertBefore(card, newCol.firstChild);
+      } else {
+        _wsInsertAtPriority(card, newCol);
+      }
       const select = card.querySelector("select[name='status']");
       if (select) select.value = data.new_status;
-      // If old col now empty, add placeholder
       if (oldCol && oldCol.querySelectorAll(".task-card").length === 0) {
         oldCol.innerHTML = '<p style="color:var(--text-muted); font-size:0.83rem;">No tasks</p>';
       }
@@ -270,8 +283,12 @@
   <div class="kanban-col-title">{{ column_name }} <span style="color:var(--text-muted);">({{ column_tasks|length }})</span></div>
   <div class="kanban-col-tasks" id="tasks-{{ column_status }}">
     {% for task in column_tasks %}
-    <div class="task-card" data-task-id="{{ task.id }}" data-priority="{{ task.priority }}" data-column="{{ column_status }}">
+    <div class="task-card" data-task-id="{{ task.id }}" data-priority="{{ task.priority }}" data-column="{{ column_status }}" data-assigned-to="{{ task.assigned_to.id|default:'' }}">
       {% if can_reorder and column_status != 'done' %}
+      <div class="drag-handle" title="Drag to reorder">
+        <span></span><span></span><span></span>
+      </div>
+      {% elif task.assigned_to.id == current_user_id %}
       <div class="drag-handle" title="Drag to reorder">
         <span></span><span></span><span></span>
       </div>
@@ -469,7 +486,7 @@ function previewSOPFile(input) {
 {% if can_reorder %}
 const PRIORITY_ORDER = {urgent: 0, high: 1, medium: 2, low: 3};
 const PRIORITY_LABEL = {urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low'};
-const SORTABLE_COLS = ['todo', 'in_progress', 'blocked'];
+const SORTABLE_COLS = ['todo', 'in_progress', 'blocked', 'done'];
 
 let pendingReorder = null;
 let originalOrder = [];
@@ -553,11 +570,14 @@ function validateAndSubmit(column, container, movedTaskId) {
   submitReorder(movedTaskId, column, orderedIds, null);
 }
 
-// Init SortableJS on todo, in_progress, blocked
+// Cross-column drag for assignees
+// Init SortableJS — owner/PM: within-column reorder and cross-column any card
+const currentUserId = '{{ current_user_id }}';
 SORTABLE_COLS.forEach(function(col) {
   const el = document.getElementById('tasks-' + col);
   if (!el) return;
   new Sortable(el, {
+    group: 'kanban',
     handle: '.drag-handle',
     animation: 60,
     easing: 'cubic-bezier(0.2, 0, 0, 1)',
@@ -574,8 +594,32 @@ SORTABLE_COLS.forEach(function(col) {
       originalOrder = [...evt.from.querySelectorAll('.task-card[data-task-id]')];
     },
     onEnd: function(evt) {
-      const movedTaskId = parseInt(evt.item.dataset.taskId);
-      validateAndSubmit(col, evt.to, movedTaskId);
+      const card = evt.item;
+      const movedTaskId = parseInt(card.dataset.taskId);
+      const fromCol = evt.from.id.replace('tasks-', '');
+      const toCol = evt.to.id.replace('tasks-', '');
+      if (fromCol === toCol) {
+        if (toCol === 'done') {
+          originalOrder.forEach(el => evt.from.appendChild(el));
+          return;
+        }
+        validateAndSubmit(col, evt.to, movedTaskId);
+      } else {
+        if (card.dataset.assignedTo !== currentUserId) {
+          evt.from.insertBefore(card, evt.from.children[evt.oldIndex] || null);
+          return;
+        }
+        card.dataset.column = toCol;
+        fetch(`/tasks/${movedTaskId}/update-status/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken'),
+          },
+          body: `status=${toCol}`,
+        }).then(r => { if (!r.ok) location.reload(); })
+          .catch(() => location.reload());
+      }
     },
   });
 });
@@ -605,6 +649,72 @@ document.getElementById('priority-dialog-cancel').addEventListener('click', func
   hidePriorityDialog();
   pendingReorder = null;
 });
+{% endif %}
+
+{% if not can_reorder %}
+(function() {
+  const _cuid = '{{ current_user_id }}';
+  const _PORDER = {urgent: 0, high: 1, medium: 2, low: 3};
+  function _getCookie(name) {
+    const v = `; ${document.cookie}`;
+    const p = v.split(`; ${name}=`);
+    if (p.length === 2) return p.pop().split(';').shift();
+  }
+  function _insertAtPriority(card, colEl) {
+    const cp = _PORDER[card.dataset.priority] ?? 99;
+    const cards = [...colEl.querySelectorAll('.task-card[data-task-id]')].filter(c => c !== card);
+    let insertBefore = null;
+    for (const c of cards) {
+      if ((_PORDER[c.dataset.priority] ?? 99) > cp) { insertBefore = c; break; }
+    }
+    if (insertBefore) colEl.insertBefore(card, insertBefore);
+    else colEl.appendChild(card);
+  }
+  ['todo', 'in_progress', 'blocked', 'done'].forEach(function(col) {
+    const el = document.getElementById('tasks-' + col);
+    if (!el) return;
+    new Sortable(el, {
+      group: 'kanban',
+      handle: '.drag-handle',
+      sort: false,
+      animation: 60,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+      forceFallback: true,
+      fallbackTolerance: 3,
+      fallbackOnBody: true,
+      scroll: true,
+      scrollSensitivity: 60,
+      scrollSpeed: 30,
+      dragClass: 'sortable-drag',
+      chosenClass: 'sortable-chosen',
+      ghostClass: 'sortable-ghost',
+      onEnd: function(evt) {
+        const card = evt.item;
+        const fromCol = evt.from.id.replace('tasks-', '');
+        const toCol = evt.to.id.replace('tasks-', '');
+        if (fromCol === toCol || card.dataset.assignedTo !== _cuid) {
+          evt.from.insertBefore(card, evt.from.children[evt.oldIndex] || null);
+          return;
+        }
+        card.dataset.column = toCol;
+        if (toCol === 'done') {
+          evt.to.insertBefore(card, evt.to.firstChild);
+        } else {
+          _insertAtPriority(card, evt.to);
+        }
+        fetch(`/tasks/${card.dataset.taskId}/update-status/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': _getCookie('csrftoken'),
+          },
+          body: `status=${toCol}`,
+        }).then(r => { if (!r.ok) location.reload(); })
+          .catch(() => location.reload());
+      },
+    });
+  });
+})();
 {% endif %}
 
 // Done column — drag attempt message (shown to everyone)

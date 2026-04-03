@@ -304,6 +304,7 @@ def project_detail(request, project_id):
 
     is_pm = project.manager and project.manager == user
     can_reorder = (has_role(user, "Owner") or bool(is_pm)) and not project.is_completed
+    current_user_id = user.id
 
     context = {
         "project": project,
@@ -311,6 +312,7 @@ def project_detail(request, project_id):
         "can_manage_sop": can_manage_sop,
         "is_owner": is_owner,
         "can_reorder": can_reorder,
+        "current_user_id": current_user_id,
         "columns": [
             ("Todo",        "todo",        Task.objects.filter(project=project, status="todo",        is_archived=False).annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
             ("In Progress", "in_progress", Task.objects.filter(project=project, status="in_progress", is_archived=False).annotate(porder=Case(When(priority='urgent',then=0),When(priority='high',then=1),When(priority='medium',then=2),When(priority='low',then=3),default=4,output_field=IntegerField())).order_by('porder', 'position')),
