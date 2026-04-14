@@ -176,7 +176,8 @@
   <script>
   (function() {
     const projectId = {{ project.id }};
-    const wsUrl = "ws://" + window.location.host + "/ws/project/" + projectId + "/";
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const wsUrl = wsScheme + "://" + window.location.host + "/ws/project/" + projectId + "/";
     let ws;
 
     function connect() {

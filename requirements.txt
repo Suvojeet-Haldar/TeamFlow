@@ -6,3 +6,5 @@ pillow
 channels==4.2.2
 channels-redis==4.2.1
 daphne==4.1.2
+python-decouple
+dj-database-url

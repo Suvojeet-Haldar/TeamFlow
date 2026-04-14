@@ -2,9 +2,9 @@
 ### Multi-Tenant SaaS Project Management Platform
 
 [![Python](https://img.shields.io/badge/Python-3.13-blue)](https://python.org)
-[![Django](https://img.shields.io/badge/Django-6.0.2-green)](https://djangoproject.com)
+[![Django](https://img.shields.io/badge/Django-6.0.4-green)](https://djangoproject.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://your-render-url.onrender.com)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://teamflow.fly.dev)
 
 A production-grade web application enabling organizations to manage teams, delegate tasks, and monitor project workflows in real time.
 
@@ -33,12 +33,15 @@ Teams working across multiple projects struggle with task visibility, accountabi
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.13, Django 6.0.2 |
-| Real-Time | Django Channels, WebSockets |
-| Cache / Message Broker | Redis (Memurai on Windows) |
-| Database | PostgreSQL (production), SQLite (dev) |
+| Backend | Python 3.13, Django 6.0.4 |
+| Real-Time | Django Channels 4.2, Daphne, WebSockets |
+| Message Broker | Upstash Redis (TLS, channels layer) |
+| Database | Supabase PostgreSQL (production), SQLite (dev fallback) |
+| File Storage | Cloudflare R2 (`teamflow-media` bucket) |
 | REST APIs | Django REST Framework |
-| Deployment | Render, Gunicorn |
+| Containerization | Docker |
+| Hosting | Fly.io (Mumbai region) |
+| CI/CD | GitHub Actions → Fly.io auto-deploy on push to `main` |
 | Frontend | HTML5, CSS3, JavaScript |
 
 ---
@@ -47,8 +50,9 @@ Teams working across multiple projects struggle with task visibility, accountabi
 
 ```
 TeamFlow/
-├── teamflow/          # Project config, ASGI/WSGI, URL routing
+├── teamflow/          # Project config, ASGI, URL routing, settings
 ├── core/              # All app logic — models, views, consumers, templates
+├── .github/workflows/ # CI/CD — GitHub Actions deploy pipeline
 └── static/            # CSS, JS assets
 ```
 
@@ -58,8 +62,9 @@ TeamFlow/
 
 ### Prerequisites
 - Python 3.13+
-- Redis (or Memurai on Windows)
-- PostgreSQL
+- Docker (for local container builds)
+- A Supabase project (PostgreSQL)
+- An Upstash Redis instance
 
 ### Installation
 
@@ -69,29 +74,45 @@ git clone https://github.com/Suvojeet-Haldar/TeamFlow.git
 cd TeamFlow
 
 # Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+python -m venv env
+source env/bin/activate  # Windows: env\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your database and Redis credentials
+# Edit .env with your credentials (see Environment Variables below)
 
 # Run migrations
 python manage.py migrate
 
-# Start Redis (or Memurai)
-# Then start the development server
+# Start the development server
 python manage.py runserver
 ```
+
+### Environment Variables
+
+| Variable | Description |
+|---|---|
+| `SECRET_KEY` | Django secret key |
+| `DEBUG` | `True` for dev, `False` for production |
+| `DJANGO_ENV` | `development` or `production` |
+| `ALLOWED_HOSTS` | Comma-separated hostnames |
+| `DATABASE_URL` | Supabase PostgreSQL connection string |
+| `DB_PASSWORD` | Database password |
+| `REDIS_URL` | Upstash Redis TLS URL |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `R2_ACCESS_KEY_ID` | Cloudflare R2 access key |
+| `R2_SECRET_ACCESS_KEY` | Cloudflare R2 secret key |
+| `R2_BUCKET_NAME` | R2 bucket name (`teamflow-media`) |
+| `R2_ENDPOINT` | R2 endpoint URL |
 
 ---
 
 ## 🌐 Live Demo
 
-[View Live on Render](https://your-render-url.onrender.com)
+[View Live on Fly.io](https://teamflow.fly.dev)
 
 ---
 

@@ -8,6 +8,7 @@ docs
 media
 claude
 
-fix_css.py
 
 .gitignore
+datadump.json
+staticfile
