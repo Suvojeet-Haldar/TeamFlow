@@ -151,15 +151,16 @@ LOGOUT_REDIRECT_URL = '/'          # land on homepage after logout
 # MEDIA_ROOT = BASE_DIR / 'media'
 
 # ── Cloudflare R2 / Object Storage ─────────────────────────────
-AWS_ACCESS_KEY_ID        = config('R2_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY    = config('R2_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME  = config('R2_BUCKET_NAME')
-AWS_S3_ENDPOINT_URL      = config('R2_ENDPOINT')
+AWS_ACCESS_KEY_ID        = config('R2_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY    = config('R2_SECRET_ACCESS_KEY', default='')
+DEFAULT_FILE_STORAGE     = 'storages.backends.s3boto3.S3Boto3Storage'
+AWS_STORAGE_BUCKET_NAME  = config('R2_BUCKET_NAME', default='')
+AWS_S3_ENDPOINT_URL      = config('R2_ENDPOINT', default='')
 AWS_S3_FILE_OVERWRITE    = False
 AWS_DEFAULT_ACL          = None
 AWS_S3_SIGNATURE_VERSION = 's3v4'
 AWS_QUERYSTRING_AUTH     = False # stays False — correct for public buckets
-AWS_S3_CUSTOM_DOMAIN = config('R2_PUBLIC_DOMAIN')
+AWS_S3_CUSTOM_DOMAIN = config('R2_PUBLIC_DOMAIN', default='')
 AWS_LOCATION = 'media'
 
 STORAGES = {
