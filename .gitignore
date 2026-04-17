@@ -12,3 +12,4 @@ claude
 .gitignore
 datadump.json
 staticfile
+migrate_media_to_r2.py

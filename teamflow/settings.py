@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-5o4ra!8elxv-p@*@5nef218$&)rfm(@tq_9=(#$@7p4&b%leic"
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -147,8 +147,30 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/projects/'
 LOGOUT_REDIRECT_URL = '/'          # land on homepage after logout
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = BASE_DIR / 'media'
+
+# ── Cloudflare R2 / Object Storage ─────────────────────────────
+AWS_ACCESS_KEY_ID        = config('R2_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY    = config('R2_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME  = config('R2_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL      = config('R2_ENDPOINT')
+AWS_S3_FILE_OVERWRITE    = False
+AWS_DEFAULT_ACL          = None
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_QUERYSTRING_AUTH     = False # stays False — correct for public buckets
+AWS_S3_CUSTOM_DOMAIN = config('R2_PUBLIC_DOMAIN')
+AWS_LOCATION = 'media'
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
 CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
 
 ASGI_APPLICATION = "teamflow.asgi.application"

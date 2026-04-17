@@ -8,3 +8,5 @@ channels-redis==4.2.1
 daphne==4.1.2
 python-decouple
 dj-database-url
+django-storages[s3]>=1.14
+boto3>=1.34
