@@ -156,6 +156,17 @@ All secrets are consumed via `python-decouple` (`config()`). In production these
 
 Deployed on **Fly.io**. The CI/CD pipeline in `.github/workflows/deploy.yml` triggers `flyctl deploy` automatically on every push to `main`, using `FLY_API_TOKEN` stored as a GitHub Actions secret.
 
+#### Why Fly.io for TeamFlow?
+
+Fly.io provides a built-in global edge proxy in front of the app, which is a strong fit for TeamFlow’s Django + Daphne (ASGI) architecture:
+
+- **SSL termination (HTTPS) at the edge** before traffic reaches Daphne
+- **Built-in load balancing** across instances/regions
+- **DDoS protection at the edge**
+- Works well for **real-time WebSocket traffic** and global low-latency access
+
+This reduces infrastructure complexity while keeping deployment production-ready.
+
 **Manual deploy:**
 
 ```bash
