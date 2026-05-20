@@ -26,4 +26,6 @@ urlpatterns = [
     path("member/<int:user_id>/", views.member_card, name="member_card"),
     path("profile/edit/", views.edit_profile, name="edit_profile"),
     path("", views.landing, name="landing"),
+    path('sop/<int:doc_id>/delete/', views.delete_sop, name='delete_sop'),
+    # path('submissions/<int:submission_id>/delete/', views.delete_submission, name='delete_submission'),
 ]

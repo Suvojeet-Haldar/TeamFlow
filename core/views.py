@@ -18,6 +18,8 @@ from django.db import models
 from django.db.models import Q, Case, When, IntegerField
 from django.db import models, transaction
 from .utils import broadcast_board_update
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 
 def get_role_name(user):
@@ -282,18 +284,18 @@ def project_detail(request, project_id):
                 )
             return redirect("project_detail", project_id=project.id)
 
-        elif action == "delete_sop" and is_owner:
-            doc_id = request.POST.get("doc_id")
-            doc = SOPDocument.objects.filter(
-                id=doc_id, project=project
-            ).first()
-            if doc:
-                ActivityLog.objects.create(
-                    user=user, project=project,
-                    action=f"deleted SOP \"{doc.name}\""
-                )
-                doc.delete()
-            return redirect("project_detail", project_id=project.id)
+        # elif action == "delete_sop" and is_owner:
+        #     doc_id = request.POST.get("doc_id")
+        #     doc = SOPDocument.objects.filter(
+        #         id=doc_id, project=project
+        #     ).first()
+        #     if doc:
+        #         ActivityLog.objects.create(
+        #             user=user, project=project,
+        #             action=f"deleted SOP \"{doc.name}\""
+        #         )
+        #         doc.delete()
+        #     return redirect("project_detail", project_id=project.id)
 
     activity_logs = ActivityLog.objects.filter(project=project, task_only=False).order_by("-timestamp")
 
@@ -1631,3 +1633,55 @@ def submit_solution(request, task_id):
 def custom_logout(request):
     auth_logout(request)
     return redirect('/')
+
+@login_required
+@require_POST
+def delete_sop(request, doc_id):
+    doc = get_object_or_404(SOPDocument, id=doc_id)
+    user = request.user
+
+    if not user_can_access_project(user, doc.project):
+        return JsonResponse({'ok': False, 'error': 'Forbidden'}, status=403)
+
+    if not has_role(user, 'Owner'):
+        return JsonResponse({'ok': False, 'error': 'Forbidden'}, status=403)
+
+    ActivityLog.objects.create(
+        user=user, project=doc.project,
+        action=f'deleted SOP "{doc.name}"'
+    )
+
+    if doc.sop_file:
+        doc.sop_file.delete(save=False)  # removes file from R2
+
+    doc.delete()
+    return JsonResponse({'ok': True})
+
+
+# @login_required
+# @require_POST
+# def delete_submission(request, submission_id):
+#     submission = get_object_or_404(Submission, id=submission_id)
+#     user = request.user
+
+#     if not user_can_access_project(user, submission.task.project):
+#         return JsonResponse({'ok': False, 'error': 'Forbidden'}, status=403)
+
+#     is_owner = has_role(user, 'Owner')
+#     is_pm = submission.task.project.manager and submission.task.project.manager == user
+#     is_submitter = submission.submitted_by == user
+
+#     if not (is_owner or is_pm or is_submitter):
+#         return JsonResponse({'ok': False, 'error': 'Forbidden'}, status=403)
+
+#     ActivityLog.objects.create(
+#         user=user, project=submission.task.project, task=submission.task,
+#         action=f'deleted a submission on #{submission.task.task_number} "{submission.task.title}"',
+#         task_only=True
+#     )
+
+#     if submission.file:
+#         submission.file.delete(save=False)  # removes file from R2
+
+#     submission.delete()
+#     return JsonResponse({'ok': True})

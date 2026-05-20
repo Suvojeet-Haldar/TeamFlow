@@ -53,7 +53,7 @@
     </thead>
     <tbody>
       {% for doc in sop_documents %}
-      <tr>
+      <tr data-sop-row>
         <td style="max-width:260px; overflow-wrap:break-word;">
           {% if doc.sop_file %}
             <a href="{{ doc.sop_file.url }}" target="_blank">{{ doc.name }}</a>
@@ -86,12 +86,17 @@
                      class="form-input" style="width:130px; padding:4px 8px; font-size:0.80rem;">
               <button type="submit" class="btn btn-ghost btn-sm">Rename</button>
             </form>
-            <form method="POST" style="display:inline;">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="delete_sop">
-              <input type="hidden" name="doc_id" value="{{ doc.id }}">
-              <button type="submit" class="btn btn-link-danger btn-sm">Delete</button>
-            </form>
+            {% if is_owner %}
+              <button
+                class="btn btn-ghost delete-sop-btn"
+                type="button"
+                data-doc-id="{{ doc.id }}"
+                data-doc-name="{{ doc.name }}"
+                data-url="{% url 'delete_sop' doc.id %}"
+                style="color:var(--danger, #e55);">
+                Delete
+              </button>
+              {% endif %}
           </div>
         </td>
         {% endif %}
@@ -732,4 +737,79 @@ function showDoneToast() {
   if (t) { t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 3000); }
 }
 </script>
+
+<!-- Delete confirm dialog — same design as priority dialog -->
+<div id="delete-dialog" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); padding:28px 32px; max-width:440px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.6); position:relative; z-index:10000;">
+    <p id="delete-dialog-msg" style="color:var(--text-primary); margin-bottom:20px; line-height:1.6;"></p>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button id="delete-dialog-cancel" class="btn btn-ghost">Cancel</button>
+      <button id="delete-dialog-confirm" class="btn btn-primary" style="background:var(--danger, #e55); border-color:var(--danger, #e55);">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const dialog     = document.getElementById('delete-dialog');
+  const msgEl      = document.getElementById('delete-dialog-msg');
+  const cancelBtn  = document.getElementById('delete-dialog-cancel');
+  const confirmBtn = document.getElementById('delete-dialog-confirm');
+
+  let pendingUrl  = null;
+  let pendingRow  = null;
+
+  function openDialog(url, name, row) {
+    pendingUrl = url;
+    pendingRow = row;
+    msgEl.textContent = `Delete "${name}"? This cannot be undone.`;
+    dialog.style.display = 'flex';
+  }
+
+  function closeDialog() {
+    dialog.style.display = 'none';
+    pendingUrl = null;
+    pendingRow = null;
+  }
+
+  cancelBtn.addEventListener('click', closeDialog);
+  dialog.addEventListener('click', function (e) {
+    if (e.target === dialog) closeDialog();
+  });
+
+  confirmBtn.addEventListener('click', function () {
+    if (!pendingUrl) return;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Deleting…';
+
+    fetch(pendingUrl, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          if (pendingRow) pendingRow.remove();
+          closeDialog();
+        } else {
+          alert('Delete failed: ' + (data.error || 'unknown error'));
+        }
+      })
+      .catch(() => alert('Network error — please try again.'))
+      .finally(() => {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Delete';
+      });
+  });
+
+  // Wire up all SOP delete buttons
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.delete-sop-btn');
+    if (!btn) return;
+    const row = btn.closest('[data-sop-row]');  // see note below
+    openDialog(btn.dataset.url, btn.dataset.docName, row);
+  });
+})();
+</script>
+
 {% endblock %}

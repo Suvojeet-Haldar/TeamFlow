@@ -35,6 +35,8 @@ urlpatterns = [
     path('invite/accept/<uuid:token>/', views.accept_invite, name='accept_invite'),
     path('invite/check-username/', views.check_username, name='check_username'),
     path('org-tree/', views.org_tree, name='org_tree'),
+    path('sop/<int:doc_id>/delete/', views.delete_sop, name='delete_sop'),
+    # path('submissions/<int:submission_id>/delete/', views.delete_submission, name='delete_submission'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 handler403 = 'core.views.csrf_failure'
