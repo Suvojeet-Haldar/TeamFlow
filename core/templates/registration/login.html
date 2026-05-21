@@ -199,6 +199,7 @@
 
   <form method="POST" action="/login/" autocomplete="off">
     {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
     <div class="field">
       <label for="username">Username</label>
       <input type="text" id="username" name="username"

@@ -782,14 +782,12 @@ def accept_invite(request, token):
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("project_list")
-
     error = None
-
+    next_url = request.POST.get("next") or request.GET.get("next", "")
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
         user = authenticate(request, username=username, password=password)
-
         if user is not None:
             login(request, user)
             messages.success(
@@ -797,11 +795,13 @@ def login_view(request):
                 f"Welcome back, {user.username}! "
                 f"You are logged in as {get_role_name(user)} at {user.organization}."
             )
+            from django.utils.http import url_has_allowed_host_and_scheme
+            if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                return redirect(next_url)
             return redirect("project_list")
         else:
             error = "Invalid username or password."
-
-    return render(request, "registration/login.html", {"error": error})
+    return render(request, "registration/login.html", {"error": error, "next": next_url})
 
 
 @login_required
